@@ -1,6 +1,8 @@
 import { CommonModule, CurrencyPipe } from '@angular/common';
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, DestroyRef, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormArray, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
 import { forkJoin } from 'rxjs';
 
 import { resolveApiError } from '../../core/services';
@@ -31,6 +33,9 @@ export class PedidosPageComponent {
   private readonly clientesService = inject(ClientesService);
   private readonly pedidosService = inject(PedidosService);
   private readonly productosService = inject(ProductosService);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  private readonly destroyRef = inject(DestroyRef);
   private readonly usuariosService = inject(UsuariosService);
 
   readonly loading = signal(true);
@@ -42,6 +47,8 @@ export class PedidosPageComponent {
   readonly productos = signal<ProductoDTO[]>([]);
   readonly estadoFiltro = signal<'todos' | PedidoEstado>('todos');
   readonly editingId = signal<number | null>(null);
+  readonly viewMode = signal<'list' | 'form'>('list');
+  readonly requestedEditId = signal<number | null>(null);
 
   readonly pedidoForm = new FormGroup({
     idCliente: new FormControl<number | null>(null),
@@ -57,6 +64,21 @@ export class PedidosPageComponent {
 
   constructor() {
     this.addDetail();
+    this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
+      const view = params.get('vista') === 'formulario' ? 'form' : 'list';
+      const rawEditId = params.get('editar');
+      const editId = rawEditId ? Number(rawEditId) : null;
+
+      this.viewMode.set(view);
+      this.requestedEditId.set(rawEditId && Number.isFinite(editId) ? editId : null);
+
+      if (view === 'list') {
+        this.resetForm();
+        return;
+      }
+
+      this.syncFormWithRouteState();
+    });
     this.loadPage();
   }
 
@@ -80,6 +102,7 @@ export class PedidosPageComponent {
         this.usuarios.set(response.usuarios);
         this.productos.set(response.productos);
         this.loading.set(false);
+        this.syncFormWithRouteState();
       },
       error: (error: unknown) => {
         this.errorMessage.set(resolveApiError(error));
@@ -163,7 +186,7 @@ export class PedidosPageComponent {
 
     request.subscribe({
       next: () => {
-        this.resetForm();
+        this.navigateToList();
         this.loadPage();
         this.saving.set(false);
       },
@@ -175,25 +198,14 @@ export class PedidosPageComponent {
   }
 
   editOrder(order: PedidoDTO): void {
-    this.editingId.set(order.idPedido ?? null);
-    this.pedidoForm.patchValue({
-      idCliente: order.idCliente ?? null,
-      idUsuario: order.idUsuario,
-      estado: order.estado,
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: {
+        vista: 'formulario',
+        editar: order.idPedido ?? null,
+      },
+      queryParamsHandling: 'merge',
     });
-    this.detailsArray.clear();
-    if (order.detalles?.length) {
-      for (const detail of order.detalles) {
-        this.addDetail({
-          idDetalle: detail.idDetalle ?? null,
-          idProducto: detail.idProducto,
-          cantidad: detail.cantidad,
-          precioUnitario: Number(detail.precioUnitario),
-        });
-      }
-    } else {
-      this.addDetail();
-    }
   }
 
   deleteOrder(order: PedidoDTO): void {
@@ -211,6 +223,33 @@ export class PedidosPageComponent {
     this.pedidoForm.reset({ idCliente: null, idUsuario: null, estado: 'pendiente', detalles: [] });
     this.detailsArray.clear();
     this.addDetail();
+  }
+
+  openCreateView(): void {
+    if (this.viewMode() === 'form' && this.requestedEditId() === null) {
+      this.resetForm();
+      return;
+    }
+
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: {
+        vista: 'formulario',
+        editar: null,
+      },
+      queryParamsHandling: 'merge',
+    });
+  }
+
+  navigateToList(): void {
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: {
+        vista: null,
+        editar: null,
+      },
+      queryParamsHandling: 'merge',
+    });
   }
 
   clientLabel(idCliente: number | null | undefined): string {
@@ -233,5 +272,51 @@ export class PedidosPageComponent {
     if (estado === 'completado') return 'completed';
     if (estado === 'cancelado') return 'cancelled';
     return 'pending';
+  }
+
+  private syncFormWithRouteState(): void {
+    if (this.viewMode() !== 'form') {
+      return;
+    }
+
+    const editId = this.requestedEditId();
+    if (editId === null) {
+      this.resetForm();
+      return;
+    }
+
+    const order = this.pedidos().find((item) => item.idPedido === editId);
+    if (!order) {
+      if (!this.loading()) {
+        this.errorMessage.set('No se encontro el pedido solicitado para editar.');
+        this.navigateToList();
+      }
+      return;
+    }
+
+    this.populateOrder(order);
+  }
+
+  private populateOrder(order: PedidoDTO): void {
+    this.editingId.set(order.idPedido ?? null);
+    this.pedidoForm.patchValue({
+      idCliente: order.idCliente ?? null,
+      idUsuario: order.idUsuario,
+      estado: order.estado,
+    });
+    this.detailsArray.clear();
+    if (order.detalles?.length) {
+      for (const detail of order.detalles) {
+        this.addDetail({
+          idDetalle: detail.idDetalle ?? null,
+          idProducto: detail.idProducto,
+          cantidad: detail.cantidad,
+          precioUnitario: Number(detail.precioUnitario),
+        });
+      }
+      return;
+    }
+
+    this.addDetail();
   }
 }

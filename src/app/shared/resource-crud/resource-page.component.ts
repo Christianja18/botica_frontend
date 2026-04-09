@@ -1,6 +1,8 @@
 import { CommonModule } from '@angular/common';
-import { Component, computed, inject, input, OnInit, signal } from '@angular/core';
+import { Component, computed, DestroyRef, inject, input, OnInit, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule, ValidatorFn, Validators } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
 import { forkJoin, Observable, of } from 'rxjs';
 
 import { CrudResourceKey } from '../../core/models';
@@ -8,6 +10,8 @@ import { BoticaApiService, resolveApiError } from '../../core/services';
 import {
   decimalPrecisionValidator,
   isTextLikeField,
+  maxIsoDateValidator,
+  minIsoDateValidator,
   notBlankTrimmedValidator,
   trimTextValue,
 } from '../../core/validators';
@@ -27,6 +31,9 @@ import {
 })
 export class ResourcePageComponent implements OnInit {
   private readonly lookupApi = inject(BoticaApiService);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly config = input.required<ResourcePageConfig>();
   readonly resourceService = input.required<CrudPageService>();
@@ -36,10 +43,12 @@ export class ResourcePageComponent implements OnInit {
   readonly errorMessage = signal<string | null>(null);
   readonly searchTerm = signal('');
   readonly editingId = signal<number | null>(null);
+  readonly viewMode = signal<'list' | 'form'>('list');
   readonly items = signal<Record<string, unknown>[]>([]);
   readonly lookupOptions = signal<Record<string, Record<string, unknown>[]>>({});
   readonly defaultValues: Record<string, unknown> = {};
   readonly form = new FormGroup<Record<string, FormControl<unknown>>>({});
+  readonly requestedEditId = signal<number | null>(null);
 
   readonly filteredItems = computed(() => {
     const term = this.searchTerm().trim().toLowerCase();
@@ -52,9 +61,25 @@ export class ResourcePageComponent implements OnInit {
         .searchableFields.some((fieldKey) => String(item[fieldKey] ?? '').toLowerCase().includes(term)),
     );
   });
+  readonly todayIso = this.toIsoDate(new Date());
 
   ngOnInit(): void {
     this.buildForm();
+    this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
+      const view = params.get('vista') === 'formulario' ? 'form' : 'list';
+      const rawEditId = params.get('editar');
+      const editId = rawEditId ? Number(rawEditId) : null;
+
+      this.viewMode.set(view);
+      this.requestedEditId.set(rawEditId && Number.isFinite(editId) ? editId : null);
+
+      if (view === 'list') {
+        this.prepareCreateForm();
+        return;
+      }
+
+      this.syncFormWithRouteState();
+    });
     this.loadPage();
   }
 
@@ -70,6 +95,7 @@ export class ResourcePageComponent implements OnInit {
         this.items.set(items);
         this.lookupOptions.set(lookups);
         this.loading.set(false);
+        this.syncFormWithRouteState();
       },
       error: (error: unknown) => {
         this.errorMessage.set(resolveApiError(error));
@@ -95,7 +121,7 @@ export class ResourcePageComponent implements OnInit {
 
     request.subscribe({
       next: () => {
-        this.resetForm();
+        this.navigateToList();
         this.loadPage();
         this.saving.set(false);
       },
@@ -107,18 +133,14 @@ export class ResourcePageComponent implements OnInit {
   }
 
   editItem(item: Record<string, unknown>): void {
-    this.editingId.set(Number(item[this.config().idKey]));
-    this.applyFieldValidators(true);
-
-    for (const field of this.config().fields) {
-      const control = this.form.controls[field.key];
-      control?.setValue(
-        (field.type === 'checkbox' ? Boolean(item[field.key]) : (item[field.key] ?? '')) as unknown,
-        { emitEvent: false },
-      );
-    }
-
-    this.submitted.set(false);
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: {
+        vista: 'formulario',
+        editar: Number(item[this.config().idKey]),
+      },
+      queryParamsHandling: 'merge',
+    });
   }
 
   deleteItem(item: Record<string, unknown>): void {
@@ -134,10 +156,7 @@ export class ResourcePageComponent implements OnInit {
   }
 
   resetForm(): void {
-    this.editingId.set(null);
-    this.submitted.set(false);
-    this.form.reset(this.defaultValues);
-    this.applyFieldValidators(false);
+    this.prepareCreateForm();
   }
 
   controlInvalid(key: string): boolean {
@@ -147,6 +166,22 @@ export class ResourcePageComponent implements OnInit {
 
   fieldInputType(field: ResourceFieldConfig): string {
     return field.type === 'currency' ? 'number' : field.type;
+  }
+
+  fieldMinDate(field: ResourceFieldConfig): string | null {
+    if (field.type !== 'date' || !field.minDate) {
+      return null;
+    }
+
+    return field.minDate === 'today' ? this.todayIso : field.minDate;
+  }
+
+  fieldMaxDate(field: ResourceFieldConfig): string | null {
+    if (field.type !== 'date' || !field.maxDate) {
+      return null;
+    }
+
+    return field.maxDate === 'today' ? this.todayIso : field.maxDate;
   }
 
   formatValue(item: Record<string, unknown>, column: ResourceColumnConfig): string {
@@ -176,6 +211,33 @@ export class ResourcePageComponent implements OnInit {
     return match ? String(match[lookup.labelKey]) : String(value ?? '-');
   }
 
+  openCreateView(): void {
+    if (this.viewMode() === 'form' && this.requestedEditId() === null) {
+      this.prepareCreateForm();
+      return;
+    }
+
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: {
+        vista: 'formulario',
+        editar: null,
+      },
+      queryParamsHandling: 'merge',
+    });
+  }
+
+  navigateToList(): void {
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: {
+        vista: null,
+        editar: null,
+      },
+      queryParamsHandling: 'merge',
+    });
+  }
+
   private buildForm(): void {
     for (const field of this.config().fields) {
       const defaultValue = field.type === 'checkbox' ? false : field.hiddenInForm ? 0 : '';
@@ -183,6 +245,51 @@ export class ResourcePageComponent implements OnInit {
       this.form.addControl(field.key, new FormControl(defaultValue));
     }
 
+    this.applyFieldValidators(false);
+  }
+
+  private syncFormWithRouteState(): void {
+    if (this.viewMode() !== 'form') {
+      return;
+    }
+
+    const editId = this.requestedEditId();
+    if (editId === null) {
+      this.prepareCreateForm();
+      return;
+    }
+
+    const item = this.items().find((entry) => Number(entry[this.config().idKey]) === editId);
+    if (!item) {
+      if (!this.loading()) {
+        this.errorMessage.set(`No se encontro el ${this.config().createLabel} solicitado para editar.`);
+        this.navigateToList();
+      }
+      return;
+    }
+
+    this.populateForm(item);
+  }
+
+  private populateForm(item: Record<string, unknown>): void {
+    this.editingId.set(Number(item[this.config().idKey]));
+    this.applyFieldValidators(true);
+
+    for (const field of this.config().fields) {
+      const control = this.form.controls[field.key];
+      control?.setValue(
+        (field.type === 'checkbox' ? Boolean(item[field.key]) : (item[field.key] ?? '')) as unknown,
+        { emitEvent: false },
+      );
+    }
+
+    this.submitted.set(false);
+  }
+
+  private prepareCreateForm(): void {
+    this.editingId.set(null);
+    this.submitted.set(false);
+    this.form.reset(this.defaultValues);
     this.applyFieldValidators(false);
   }
 
@@ -207,6 +314,12 @@ export class ResourcePageComponent implements OnInit {
       if (field.min !== undefined) validators.push(Validators.min(field.min));
       if (field.integerDigits !== undefined && field.fractionDigits !== undefined) {
         validators.push(decimalPrecisionValidator(field.integerDigits, field.fractionDigits));
+      }
+      if (field.type === 'date' && field.minDate) {
+        validators.push(minIsoDateValidator(this.fieldMinDate(field)!));
+      }
+      if (field.type === 'date' && field.maxDate) {
+        validators.push(maxIsoDateValidator(this.fieldMaxDate(field)!));
       }
       if (field.pattern) validators.push(Validators.pattern(field.pattern));
 
@@ -254,5 +367,12 @@ export class ResourcePageComponent implements OnInit {
       }
     }
     return payload;
+  }
+
+  private toIsoDate(value: Date): string {
+    const year = value.getFullYear();
+    const month = String(value.getMonth() + 1).padStart(2, '0');
+    const day = String(value.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   }
 }

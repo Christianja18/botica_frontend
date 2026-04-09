@@ -44,6 +44,28 @@ export function decimalPrecisionValidator(integerDigits: number, fractionDigits:
   };
 }
 
+export function minIsoDateValidator(minDate: string): ValidatorFn {
+  return (control: AbstractControl): ValidationErrors | null => {
+    const value = String(control.value ?? '').trim();
+    if (!value) {
+      return null;
+    }
+
+    return value < minDate ? { minIsoDate: { minDate } } : null;
+  };
+}
+
+export function maxIsoDateValidator(maxDate: string): ValidatorFn {
+  return (control: AbstractControl): ValidationErrors | null => {
+    const value = String(control.value ?? '').trim();
+    if (!value) {
+      return null;
+    }
+
+    return value > maxDate ? { maxIsoDate: { maxDate } } : null;
+  };
+}
+
 export function trimTextValue(value: unknown): unknown {
   return typeof value === 'string' ? value.trim() : value;
 }

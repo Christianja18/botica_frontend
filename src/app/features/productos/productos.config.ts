@@ -45,6 +45,12 @@ export const productosPageConfig: ResourcePageConfig = {
     { key: 'idCategoria', label: 'Categoria', type: 'select', required: true, lookup: { resource: 'categorias', labelKey: 'nombre', valueKey: 'idCategoria' } },
     { key: 'idProveedor', label: 'Proveedor', type: 'select', required: true, lookup: { resource: 'proveedores', labelKey: 'nombre', valueKey: 'idProveedor' } },
     { key: 'requiereReceta', label: 'Requiere receta', type: 'checkbox' },
-    { key: 'fechaVencimiento', label: 'Fecha de vencimiento', type: 'date' },
+    {
+      key: 'fechaVencimiento',
+      label: 'Fecha de vencimiento',
+      type: 'date',
+      minDate: 'today',
+      helpText: 'Selecciona una fecha de vencimiento igual o posterior a hoy.',
+    },
   ],
 };

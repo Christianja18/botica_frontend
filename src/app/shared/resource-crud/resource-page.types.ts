@@ -39,6 +39,8 @@ export interface ResourceFieldConfig {
   integerDigits?: number;
   fractionDigits?: number;
   step?: string;
+  minDate?: string | 'today';
+  maxDate?: string | 'today';
   pattern?: string;
   lookup?: LookupConfig;
   hiddenInForm?: boolean;

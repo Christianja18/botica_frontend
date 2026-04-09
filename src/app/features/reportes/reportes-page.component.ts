@@ -1,6 +1,6 @@
 import { CommonModule, CurrencyPipe } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
-import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { AbstractControl, FormControl, FormGroup, ReactiveFormsModule, ValidationErrors, ValidatorFn, Validators } from '@angular/forms';
 import { forkJoin } from 'rxjs';
 
 import { resolveApiError } from '../../core/services';
@@ -8,6 +8,17 @@ import { MonthlyMetric, ReporteDTO } from './models';
 import { ReportesService } from './services';
 import { UsuarioDTO } from '../usuarios/models';
 import { UsuariosService } from '../usuarios/services';
+
+function maxIsoDateValidator(maxDate: string): ValidatorFn {
+  return (control: AbstractControl): ValidationErrors | null => {
+    const value = String(control.value ?? '').trim();
+    if (!value) {
+      return null;
+    }
+
+    return value > maxDate ? { maxIsoDate: true } : null;
+  };
+}
 
 @Component({
   selector: 'app-reportes-page',
@@ -18,7 +29,8 @@ import { UsuariosService } from '../usuarios/services';
 export class ReportesPageComponent {
   private readonly reportesService = inject(ReportesService);
   private readonly usuariosService = inject(UsuariosService);
-  private readonly currentYear = 2026;
+  private readonly today = new Date();
+  private readonly currentYear = this.today.getFullYear();
 
   readonly loading = signal(true);
   readonly generating = signal(false);
@@ -27,10 +39,17 @@ export class ReportesPageComponent {
   readonly usuarios = signal<UsuarioDTO[]>([]);
   readonly ventasMensuales = signal<MonthlyMetric[]>([]);
   readonly gananciasMensuales = signal<MonthlyMetric[]>([]);
+  readonly todayIso = this.toIsoDate(this.today);
 
   readonly salesForm = new FormGroup({
-    fechaInicio: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
-    fechaFin: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
+    fechaInicio: new FormControl('', {
+      nonNullable: true,
+      validators: [Validators.required, maxIsoDateValidator(this.todayIso)],
+    }),
+    fechaFin: new FormControl('', {
+      nonNullable: true,
+      validators: [Validators.required, maxIsoDateValidator(this.todayIso)],
+    }),
     idUsuario: new FormControl<number | null>(null, { validators: [Validators.required] }),
   });
 
@@ -74,6 +93,12 @@ export class ReportesPageComponent {
 
   createSalesReport(): void {
     if (this.salesForm.invalid) {
+      if (this.salesForm.controls.fechaInicio.hasError('maxIsoDate')) {
+        this.errorMessage.set(`La fecha inicio no puede ser posterior a ${this.toDisplayDate(this.todayIso)}.`);
+      }
+      if (this.salesForm.controls.fechaFin.hasError('maxIsoDate')) {
+        this.errorMessage.set(`La fecha fin no puede ser posterior a ${this.toDisplayDate(this.todayIso)}.`);
+      }
       this.salesForm.markAllAsTouched();
       return;
     }
@@ -160,6 +185,18 @@ export class ReportesPageComponent {
   }
 
   private toApiDate(value: string): string {
+    const [year, month, day] = value.split('-');
+    return `${day}/${month}/${year}`;
+  }
+
+  private toIsoDate(value: Date): string {
+    const year = value.getFullYear();
+    const month = String(value.getMonth() + 1).padStart(2, '0');
+    const day = String(value.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  private toDisplayDate(value: string): string {
     const [year, month, day] = value.split('-');
     return `${day}/${month}/${year}`;
   }

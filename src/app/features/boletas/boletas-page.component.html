@@ -1,3 +1,87 @@
-<section class="crud-page">
+<section class="boletas-page">
   <app-resource-page [config]="config" [resourceService]="resourceService" />
+
+  @if (crudViewMode() === 'list') {
+    <section class="page-shell print-shell">
+      @if (errorMessage()) {
+        <div class="banner banner-error">{{ errorMessage() }}</div>
+      }
+
+      <article class="surface panel print-panel">
+        <div class="panel-header">
+          <div>
+            <p class="page-kicker">Facturacion y despacho</p>
+            <h2 class="panel-title">Centro de impresion</h2>
+            <p class="panel-subtitle">
+              Revisa boletas listas para mostrador o reimpresion sin apretar el listado principal.
+            </p>
+          </div>
+          <div class="print-toolbar">
+            <span class="pill">{{ boletas().length }} boletas detectadas</span>
+            <button class="btn btn-ghost" type="button" (click)="loadBoletas()">Actualizar impresion</button>
+          </div>
+        </div>
+
+        @if (loadingBoletas()) {
+          <div class="empty-state"><strong>Cargando boletas...</strong></div>
+        } @else if (!boletas().length) {
+          <div class="empty-state">No hay boletas registradas todavia.</div>
+        } @else {
+          <div class="print-grid">
+            @for (boleta of boletas(); track boleta.idBoleta) {
+              <article class="surface ticket-card">
+                <div class="panel-header">
+                  <div>
+                    <span class="pill">Boleta #{{ boleta.idBoleta }}</span>
+                    <h3 class="panel-title">{{ boleta.numeroBoleta }}</h3>
+                    <p class="panel-subtitle">Pedido #{{ boleta.idPedido }} · {{ boletaDate(boleta) }}</p>
+                  </div>
+                  <span class="status-pill" [class.printed]="boleta.impresa" [class.pending]="!boleta.impresa">
+                    {{ boleta.impresa ? 'Impresa' : 'Pendiente' }}
+                  </span>
+                </div>
+
+                <div class="ticket-meta">
+                  <div class="meta-block">
+                    <span class="meta-label">Cliente</span>
+                    <p>{{ displayEntityData(boleta.datosCliente) }}</p>
+                  </div>
+                  <div class="meta-block">
+                    <span class="meta-label">Empleado</span>
+                    <p>{{ displayEntityData(boleta.datosEmpleado) }}</p>
+                  </div>
+                </div>
+
+                <div class="summary-box">
+                  <div class="summary-line">
+                    <span>Subtotal</span>
+                    <strong>{{ (boleta.total ?? 0) | currency: 'PEN':'symbol':'1.2-2' }}</strong>
+                  </div>
+                  <div class="summary-line">
+                    <span>IGV</span>
+                    <strong>{{ (boleta.igv ?? 0) | currency: 'PEN':'symbol':'1.2-2' }}</strong>
+                  </div>
+                  <div class="summary-line total">
+                    <span>Total</span>
+                    <strong>{{ boletaTotal(boleta) | currency: 'PEN':'symbol':'1.2-2' }}</strong>
+                  </div>
+                </div>
+
+                <div class="form-actions">
+                  <button
+                    class="btn btn-primary"
+                    type="button"
+                    (click)="printBoleta(boleta)"
+                    [disabled]="printingId() === boleta.idBoleta"
+                  >
+                    {{ printingId() === boleta.idBoleta ? 'Imprimiendo...' : boleta.impresa ? 'Reimprimir' : 'Imprimir' }}
+                  </button>
+                </div>
+              </article>
+            }
+          </div>
+        }
+      </article>
+    </section>
+  }
 </section>
