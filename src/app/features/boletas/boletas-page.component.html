@@ -34,7 +34,7 @@
                   <div>
                     <span class="pill">Boleta #{{ boleta.idBoleta }}</span>
                     <h3 class="panel-title">{{ boleta.numeroBoleta }}</h3>
-                    <p class="panel-subtitle">Pedido #{{ boleta.idPedido }} · {{ boletaDate(boleta) }}</p>
+                    <p class="panel-subtitle">{{ pedidoSummary(boleta) }} · {{ boletaDate(boleta) }}</p>
                   </div>
                   <span class="status-pill" [class.printed]="boleta.impresa" [class.pending]="!boleta.impresa">
                     {{ boleta.impresa ? 'Impresa' : 'Pendiente' }}
@@ -44,11 +44,11 @@
                 <div class="ticket-meta">
                   <div class="meta-block">
                     <span class="meta-label">Cliente</span>
-                    <p>{{ displayEntityData(boleta.datosCliente) }}</p>
+                    <p>{{ pedidoClientSummary(boleta) }}</p>
                   </div>
                   <div class="meta-block">
                     <span class="meta-label">Empleado</span>
-                    <p>{{ displayEntityData(boleta.datosEmpleado) }}</p>
+                    <p>{{ pedidoUserSummary(boleta) }}</p>
                   </div>
                 </div>
 

@@ -21,6 +21,22 @@ interface DetailFormValue {
   idProducto: number | null;
   cantidad: number;
   precioUnitario: number;
+  subtotal: number;
+}
+
+type DetailFormGroup = FormGroup<{
+  idDetalle: FormControl<number | null>;
+  idProducto: FormControl<number | null>;
+  cantidad: FormControl<number>;
+  precioUnitario: FormControl<number>;
+  subtotal: FormControl<number>;
+}>;
+
+interface PedidoDraftValue {
+  idCliente: number | null;
+  idUsuario: number | null;
+  estado: PedidoEstado;
+  detalles: DetailFormValue[];
 }
 
 @Component({
@@ -49,12 +65,13 @@ export class PedidosPageComponent {
   readonly editingId = signal<number | null>(null);
   readonly viewMode = signal<'list' | 'form'>('list');
   readonly requestedEditId = signal<number | null>(null);
+  readonly selectorMode = signal<'none' | 'boleta'>('none');
 
   readonly pedidoForm = new FormGroup({
     idCliente: new FormControl<number | null>(null),
     idUsuario: new FormControl<number | null>(null, { validators: [Validators.required] }),
     estado: new FormControl<PedidoEstado>('pendiente', { nonNullable: true, validators: [Validators.required] }),
-    detalles: new FormArray<FormGroup>([]),
+    detalles: new FormArray<DetailFormGroup>([]),
   });
 
   readonly filteredOrders = computed(() => {
@@ -68,9 +85,16 @@ export class PedidosPageComponent {
       const view = params.get('vista') === 'formulario' ? 'form' : 'list';
       const rawEditId = params.get('editar');
       const editId = rawEditId ? Number(rawEditId) : null;
+      const selector = params.get('selector');
+      const selectedClient = params.get('pedidoClienteSeleccionado');
+      const selectedUser = params.get('pedidoUsuarioSeleccionado');
+      const selectedProduct = params.get('pedidoProductoSeleccionado');
+      const selectedDetailIndex = params.get('pedidoDetalleIndex');
+      const draft = params.get('pedidoDraft');
 
       this.viewMode.set(view);
       this.requestedEditId.set(rawEditId && Number.isFinite(editId) ? editId : null);
+      this.selectorMode.set(selector === 'boleta' ? 'boleta' : 'none');
 
       if (view === 'list') {
         this.resetForm();
@@ -78,11 +102,13 @@ export class PedidosPageComponent {
       }
 
       this.syncFormWithRouteState();
+      this.applyDraft(draft);
+      this.applyPickerSelections(selectedClient, selectedUser, selectedProduct, selectedDetailIndex);
     });
     this.loadPage();
   }
 
-  get detailsArray(): FormArray<FormGroup> {
+  get detailsArray(): FormArray<DetailFormGroup> {
     return this.pedidoForm.controls.detalles;
   }
 
@@ -103,6 +129,13 @@ export class PedidosPageComponent {
         this.productos.set(response.productos);
         this.loading.set(false);
         this.syncFormWithRouteState();
+        this.applyDraft(this.route.snapshot.queryParamMap.get('pedidoDraft'));
+        this.applyPickerSelections(
+          this.route.snapshot.queryParamMap.get('pedidoClienteSeleccionado'),
+          this.route.snapshot.queryParamMap.get('pedidoUsuarioSeleccionado'),
+          this.route.snapshot.queryParamMap.get('pedidoProductoSeleccionado'),
+          this.route.snapshot.queryParamMap.get('pedidoDetalleIndex'),
+        );
       },
       error: (error: unknown) => {
         this.errorMessage.set(resolveApiError(error));
@@ -112,8 +145,7 @@ export class PedidosPageComponent {
   }
 
   addDetail(detail?: Partial<DetailFormValue>): void {
-    this.detailsArray.push(
-      new FormGroup({
+    const detailGroup: DetailFormGroup = new FormGroup({
         idDetalle: new FormControl<number | null>(detail?.idDetalle ?? null),
         idProducto: new FormControl<number | null>(detail?.idProducto ?? null, Validators.required),
         cantidad: new FormControl<number>(detail?.cantidad ?? 1, {
@@ -124,8 +156,13 @@ export class PedidosPageComponent {
           nonNullable: true,
           validators: [Validators.required, Validators.min(0.01), decimalPrecisionValidator(8, 2)],
         }),
-      }),
-    );
+        subtotal: new FormControl<number>(detail?.subtotal ?? 0, {
+          nonNullable: true,
+        }),
+      });
+
+    this.syncDetailSubtotal(detailGroup);
+    this.detailsArray.push(detailGroup);
   }
 
   removeDetail(index: number): void {
@@ -140,21 +177,19 @@ export class PedidosPageComponent {
     const productId = Number(detailGroup.get('idProducto')?.value);
     const product = this.productos().find((item) => item.idProducto === productId);
     if (product) {
-      detailGroup.get('precioUnitario')?.setValue(Number(product.precioVenta));
+      this.applyProductSelection(detailGroup, product);
     }
   }
 
   totalDraft(): number {
     return this.detailsArray.controls.reduce((sum, group) => {
-      const quantity = Number(group.get('cantidad')?.value ?? 0);
-      const price = Number(group.get('precioUnitario')?.value ?? 0);
-      return sum + quantity * price;
+      return sum + Number(group.get('subtotal')?.value ?? 0);
     }, 0);
   }
 
   detailSubtotal(index: number): number {
     const group = this.detailsArray.at(index);
-    return Number(group.get('cantidad')?.value ?? 0) * Number(group.get('precioUnitario')?.value ?? 0);
+    return Number(group.get('subtotal')?.value ?? 0);
   }
 
   saveOrder(): void {
@@ -172,11 +207,11 @@ export class PedidosPageComponent {
       estado: this.pedidoForm.controls.estado.value,
       total: this.totalDraft(),
       detalles: this.detailsArray.controls.map((group) => ({
-        idDetalle: group.get('idDetalle')?.value,
+        idDetalle: group.get('idDetalle')?.value ?? undefined,
         idProducto: Number(group.get('idProducto')?.value),
         cantidad: Number(group.get('cantidad')?.value),
         precioUnitario: Number(group.get('precioUnitario')?.value),
-        subtotal: Number(group.get('cantidad')?.value) * Number(group.get('precioUnitario')?.value),
+        subtotal: Number(group.get('subtotal')?.value ?? 0),
       })),
     };
 
@@ -236,8 +271,45 @@ export class PedidosPageComponent {
       queryParams: {
         vista: 'formulario',
         editar: null,
+        pedidoClienteSeleccionado: null,
+        pedidoUsuarioSeleccionado: null,
+        pedidoProductoSeleccionado: null,
+        pedidoDetalleIndex: null,
+        pedidoDraft: null,
       },
       queryParamsHandling: 'merge',
+    });
+  }
+
+  openClientPicker(): void {
+    this.router.navigate(['/clientes'], {
+      queryParams: {
+        pickerTarget: '/pedidos',
+        pickerFieldParam: 'pedidoClienteSeleccionado',
+        pickerReturnParams: this.pickerReturnParams(),
+      },
+    });
+  }
+
+  openUserPicker(): void {
+    this.router.navigate(['/usuarios'], {
+      queryParams: {
+        pickerTarget: '/pedidos',
+        pickerFieldParam: 'pedidoUsuarioSeleccionado',
+        pickerReturnParams: this.pickerReturnParams(),
+      },
+    });
+  }
+
+  openProductPicker(index: number): void {
+    this.router.navigate(['/productos'], {
+      queryParams: {
+        pickerTarget: '/pedidos',
+        pickerFieldParam: 'pedidoProductoSeleccionado',
+        pickerExtraParamName: 'pedidoDetalleIndex',
+        pickerExtraParamValue: index,
+        pickerReturnParams: this.pickerReturnParams(),
+      },
     });
   }
 
@@ -247,6 +319,12 @@ export class PedidosPageComponent {
       queryParams: {
         vista: null,
         editar: null,
+        selector: null,
+        pedidoClienteSeleccionado: null,
+        pedidoUsuarioSeleccionado: null,
+        pedidoProductoSeleccionado: null,
+        pedidoDetalleIndex: null,
+        pedidoDraft: null,
       },
       queryParamsHandling: 'merge',
     });
@@ -268,10 +346,37 @@ export class PedidosPageComponent {
     return product ? product.nombre : `Producto #${idProducto}`;
   }
 
+  selectedClientLabel(): string {
+    return this.clientLabel(this.pedidoForm.controls.idCliente.value);
+  }
+
+  selectedUserLabel(): string {
+    const userId = this.pedidoForm.controls.idUsuario.value;
+    return userId ? this.userLabel(userId) : 'Selecciona un usuario desde el historial';
+  }
+
+  selectedProductLabel(index: number): string {
+    const productId = this.detailsArray.at(index)?.get('idProducto')?.value as number | null | undefined;
+    return productId ? this.productLabel(productId) : 'Selecciona un producto desde catalogo';
+  }
+
   stateClass(estado: PedidoEstado): string {
     if (estado === 'completado') return 'completed';
     if (estado === 'cancelado') return 'cancelled';
     return 'pending';
+  }
+
+  selectOrderForBoleta(order: PedidoDTO): void {
+    if (!order.idPedido) {
+      return;
+    }
+
+    this.router.navigate(['/boletas'], {
+      queryParams: {
+        vista: 'formulario',
+        pedidoSeleccionado: order.idPedido,
+      },
+    });
   }
 
   private syncFormWithRouteState(): void {
@@ -312,11 +417,132 @@ export class PedidosPageComponent {
           idProducto: detail.idProducto,
           cantidad: detail.cantidad,
           precioUnitario: Number(detail.precioUnitario),
+          subtotal: Number(detail.subtotal ?? 0),
         });
       }
       return;
     }
 
     this.addDetail();
+  }
+
+  private applyPickerSelections(
+    selectedClient: string | null,
+    selectedUser: string | null,
+    selectedProduct: string | null,
+    selectedDetailIndex: string | null,
+  ): void {
+    if (this.viewMode() !== 'form') {
+      return;
+    }
+
+    if (selectedClient !== null) {
+      const clientId = Number(selectedClient);
+      if (Number.isFinite(clientId)) {
+        this.pedidoForm.controls.idCliente.setValue(clientId);
+      }
+    }
+
+    if (selectedUser !== null) {
+      const userId = Number(selectedUser);
+      if (Number.isFinite(userId)) {
+        this.pedidoForm.controls.idUsuario.setValue(userId);
+      }
+    }
+
+    if (selectedProduct !== null) {
+      const productId = Number(selectedProduct);
+      const detailIndex = Number(selectedDetailIndex ?? 0);
+      if (Number.isFinite(productId) && Number.isFinite(detailIndex)) {
+        while (this.detailsArray.length <= detailIndex) {
+          this.addDetail();
+        }
+        const detailGroup = this.detailsArray.at(detailIndex);
+        const product = this.productos().find((item) => item.idProducto === productId);
+        detailGroup.get('idProducto')?.setValue(productId);
+        if (product) {
+          this.applyProductSelection(detailGroup, product);
+        }
+      }
+    }
+  }
+
+  private pickerReturnParams(): string {
+    return JSON.stringify({
+      vista: 'formulario',
+      editar: this.editingId(),
+      pedidoDraft: this.serializeDraft(),
+    });
+  }
+
+  private serializeDraft(): string {
+    const draft: PedidoDraftValue = {
+      idCliente: this.pedidoForm.controls.idCliente.value,
+      idUsuario: this.pedidoForm.controls.idUsuario.value,
+      estado: this.pedidoForm.controls.estado.value,
+      detalles: this.detailsArray.controls.map((group) => ({
+        idDetalle: (group.get('idDetalle')?.value as number | null) ?? null,
+        idProducto: (group.get('idProducto')?.value as number | null) ?? null,
+        cantidad: Number(group.get('cantidad')?.value ?? 1),
+        precioUnitario: Number(group.get('precioUnitario')?.value ?? 0),
+        subtotal: Number(group.get('subtotal')?.value ?? 0),
+      })),
+    };
+
+    return JSON.stringify(draft);
+  }
+
+  private applyDraft(serializedDraft: string | null): void {
+    if (!serializedDraft || this.viewMode() !== 'form') {
+      return;
+    }
+
+    try {
+      const draft = JSON.parse(serializedDraft) as Partial<PedidoDraftValue>;
+      this.pedidoForm.patchValue({
+        idCliente: draft.idCliente ?? null,
+        idUsuario: draft.idUsuario ?? null,
+        estado: draft.estado ?? 'pendiente',
+      });
+
+      this.detailsArray.clear();
+      const details = Array.isArray(draft.detalles) ? draft.detalles : [];
+      if (!details.length) {
+        this.addDetail();
+        return;
+      }
+
+      for (const detail of details) {
+        this.addDetail({
+          idDetalle: detail.idDetalle ?? null,
+          idProducto: detail.idProducto ?? null,
+          cantidad: Number(detail.cantidad ?? 1),
+          precioUnitario: Number(detail.precioUnitario ?? 0),
+          subtotal: Number(detail.subtotal ?? 0),
+        });
+      }
+    } catch {
+      // Ignore malformed draft params and continue with the active form state.
+    }
+  }
+
+  private syncDetailSubtotal(detailGroup: DetailFormGroup): void {
+    const updateSubtotal = () => {
+      const quantity = Number(detailGroup.controls.cantidad.value ?? 0);
+      const price = Number(detailGroup.controls.precioUnitario.value ?? 0);
+      const subtotal = quantity * price;
+      detailGroup.controls.subtotal.setValue(subtotal, { emitEvent: false });
+    };
+
+    updateSubtotal();
+    detailGroup.controls.cantidad.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(updateSubtotal);
+    detailGroup.controls.precioUnitario.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(updateSubtotal);
+  }
+
+  private applyProductSelection(detailGroup: DetailFormGroup, product: ProductoDTO): void {
+    detailGroup.controls.idProducto.setValue(product.idProducto ?? null, { emitEvent: false });
+    detailGroup.controls.precioUnitario.setValue(Number(product.precioVenta ?? 0));
+    detailGroup.controls.precioUnitario.markAsDirty();
+    detailGroup.controls.precioUnitario.markAsTouched();
   }
 }

@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, computed, DestroyRef, inject, input, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule, ValidatorFn, Validators } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, ParamMap, Router } from '@angular/router';
 import { forkJoin, Observable, of } from 'rxjs';
 
 import { CrudResourceKey } from '../../core/models';
@@ -44,6 +44,11 @@ export class ResourcePageComponent implements OnInit {
   readonly searchTerm = signal('');
   readonly editingId = signal<number | null>(null);
   readonly viewMode = signal<'list' | 'form'>('list');
+  readonly pickerTarget = signal<string | null>(null);
+  readonly pickerFieldParam = signal<string | null>(null);
+  readonly pickerExtraParamName = signal<string | null>(null);
+  readonly pickerExtraParamValue = signal<string | null>(null);
+  readonly pickerReturnParams = signal<Record<string, string | number | null>>({});
   readonly items = signal<Record<string, unknown>[]>([]);
   readonly lookupOptions = signal<Record<string, Record<string, unknown>[]>>({});
   readonly defaultValues: Record<string, unknown> = {};
@@ -72,6 +77,11 @@ export class ResourcePageComponent implements OnInit {
 
       this.viewMode.set(view);
       this.requestedEditId.set(rawEditId && Number.isFinite(editId) ? editId : null);
+      this.pickerTarget.set(params.get('pickerTarget'));
+      this.pickerFieldParam.set(params.get('pickerFieldParam'));
+      this.pickerExtraParamName.set(params.get('pickerExtraParamName'));
+      this.pickerExtraParamValue.set(params.get('pickerExtraParamValue'));
+      this.pickerReturnParams.set(this.parsePickerReturnParams(params.get('pickerReturnParams')));
 
       if (view === 'list') {
         this.prepareCreateForm();
@@ -79,6 +89,7 @@ export class ResourcePageComponent implements OnInit {
       }
 
       this.syncFormWithRouteState();
+      this.applySelectionQueryParams(params);
     });
     this.loadPage();
   }
@@ -96,6 +107,7 @@ export class ResourcePageComponent implements OnInit {
         this.lookupOptions.set(lookups);
         this.loading.set(false);
         this.syncFormWithRouteState();
+        this.applySelectionQueryParams(this.route.snapshot.queryParamMap);
       },
       error: (error: unknown) => {
         this.errorMessage.set(resolveApiError(error));
@@ -208,7 +220,67 @@ export class ResourcePageComponent implements OnInit {
 
     const options = this.lookupOptions()[lookup.resource] ?? [];
     const match = options.find((option) => String(option[lookup.valueKey]) === String(value));
-    return match ? String(match[lookup.labelKey]) : String(value ?? '-');
+    return match ? this.lookupOptionLabel(lookup, match) : String(value ?? '-');
+  }
+
+  lookupOptionLabel(lookup: LookupConfig, option: Record<string, unknown>): string {
+    if (lookup.displayWith) {
+      return lookup.displayWith(option);
+    }
+
+    return String(option[lookup.labelKey] ?? '-');
+  }
+
+  pickerDisplayValue(field: ResourceFieldConfig): string {
+    const control = this.form.controls[field.key];
+    const currentValue = control?.value;
+    if (currentValue === null || currentValue === undefined || currentValue === '') {
+      return 'Ningun elemento seleccionado';
+    }
+
+    if (!field.lookup) {
+      return String(currentValue);
+    }
+
+    return this.lookupLabel(field.lookup, currentValue);
+  }
+
+  openFieldPicker(field: ResourceFieldConfig): void {
+    if (!field.pickerRoute) {
+      return;
+    }
+
+    this.router.navigate([field.pickerRoute], {
+      queryParams: field.pickerQueryParams ?? {},
+    });
+  }
+
+  selectItemForPicker(item: Record<string, unknown>): void {
+    const target = this.pickerTarget();
+    const fieldParam = this.pickerFieldParam();
+    if (!target || !fieldParam) {
+      return;
+    }
+
+    const queryParams: Record<string, string | number> = {
+      vista: 'formulario',
+      [fieldParam]: Number(item[this.config().idKey]),
+    };
+
+    for (const [key, value] of Object.entries(this.pickerReturnParams())) {
+      if (value !== null && value !== undefined && value !== '') {
+        queryParams[key] = value;
+      }
+    }
+
+    const extraParamName = this.pickerExtraParamName();
+    const extraParamValue = this.pickerExtraParamValue();
+    if (extraParamName && extraParamValue !== null) {
+      const numericValue = Number(extraParamValue);
+      queryParams[extraParamName] = Number.isFinite(numericValue) && extraParamValue.trim() !== '' ? numericValue : extraParamValue;
+    }
+
+    this.router.navigate([target], { queryParams });
   }
 
   openCreateView(): void {
@@ -240,7 +312,7 @@ export class ResourcePageComponent implements OnInit {
 
   private buildForm(): void {
     for (const field of this.config().fields) {
-      const defaultValue = field.type === 'checkbox' ? false : field.hiddenInForm ? 0 : '';
+      const defaultValue = field.type === 'checkbox' ? false : '';
       this.defaultValues[field.key] = defaultValue;
       this.form.addControl(field.key, new FormControl(defaultValue));
     }
@@ -291,6 +363,42 @@ export class ResourcePageComponent implements OnInit {
     this.submitted.set(false);
     this.form.reset(this.defaultValues);
     this.applyFieldValidators(false);
+  }
+
+  private applySelectionQueryParams(params: ParamMap): void {
+    if (this.viewMode() !== 'form' || this.requestedEditId() !== null) {
+      return;
+    }
+
+    for (const field of this.config().fields) {
+      if (!field.selectionQueryParam) {
+        continue;
+      }
+
+      const rawValue = params.get(field.selectionQueryParam);
+      if (rawValue === null) {
+        continue;
+      }
+
+      const control = this.form.controls[field.key];
+      if (!control) {
+        continue;
+      }
+
+      let parsedValue: unknown = rawValue;
+      if (field.type === 'number' || field.type === 'select') {
+        const numericValue = Number(rawValue);
+        if (!Number.isFinite(numericValue)) {
+          continue;
+        }
+        parsedValue = numericValue;
+      }
+
+      control.setValue(parsedValue, { emitEvent: false });
+      control.markAsDirty();
+      control.markAsTouched();
+      control.updateValueAndValidity({ emitEvent: false });
+    }
   }
 
   private applyFieldValidators(isEditing: boolean): void {
@@ -374,5 +482,17 @@ export class ResourcePageComponent implements OnInit {
     const month = String(value.getMonth() + 1).padStart(2, '0');
     const day = String(value.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
+  }
+
+  private parsePickerReturnParams(value: string | null): Record<string, string | number | null> {
+    if (!value) {
+      return {};
+    }
+
+    try {
+      return JSON.parse(value) as Record<string, string | number | null>;
+    } catch {
+      return {};
+    }
   }
 }

@@ -98,6 +98,51 @@ export class BoletasPageComponent {
     return boleta.fechaEmision || 'Fecha no registrada';
   }
 
+  pedidoSummary(boleta: BoletaDTO): string {
+    const pedido = boleta.pedido;
+    if (!pedido) {
+      return `Pedido #${boleta.idPedido}`;
+    }
+
+    const parts = [`Pedido #${pedido.idPedido ?? boleta.idPedido}`];
+    if (pedido.fechaPedido) {
+      parts.push(pedido.fechaPedido);
+    }
+    if (pedido.estado) {
+      parts.push(this.capitalize(pedido.estado));
+    }
+    if (pedido.total !== null && pedido.total !== undefined) {
+      parts.push(this.formatCurrency(Number(pedido.total)));
+    }
+
+    return parts.join(' · ');
+  }
+
+  pedidoClientSummary(boleta: BoletaDTO): string {
+    const cliente = boleta.pedido?.cliente;
+    if (!cliente) {
+      return this.displayEntityData(boleta.datosCliente);
+    }
+
+    const name = [cliente.nombre, cliente.apellido].filter(Boolean).join(' ').trim();
+    const details = [name, cliente.dni ? `DNI: ${cliente.dni}` : null, cliente.email, cliente.telefono]
+      .filter(Boolean)
+      .join('\n');
+
+    return details || this.displayEntityData(boleta.datosCliente);
+  }
+
+  pedidoUserSummary(boleta: BoletaDTO): string {
+    const usuario = boleta.pedido?.usuario;
+    if (!usuario) {
+      return this.displayEntityData(boleta.datosEmpleado);
+    }
+
+    const name = [usuario.nombre, usuario.apellido].filter(Boolean).join(' ').trim();
+    const details = [name, usuario.email].filter(Boolean).join('\n');
+    return details || this.displayEntityData(boleta.datosEmpleado);
+  }
+
   displayEntityData(rawValue: string | null | undefined): string {
     if (!rawValue) {
       return 'Sin datos registrados';
@@ -258,7 +303,7 @@ export class BoletasPageComponent {
           </article>
           <article class="field">
             <span class="label">Pedido asociado</span>
-            <span class="value">#${this.escapeHtml(String(boleta.idPedido))}</span>
+            <span class="value">${this.escapeHtml(this.pedidoSummary(boleta))}</span>
           </article>
           <article class="field">
             <span class="label">Fecha de emision</span>
@@ -270,11 +315,11 @@ export class BoletasPageComponent {
           </article>
           <article class="field">
             <span class="label">Datos del cliente</span>
-            <span class="value">${this.escapeHtml(this.displayEntityData(boleta.datosCliente))}</span>
+            <span class="value">${this.escapeHtml(this.pedidoClientSummary(boleta))}</span>
           </article>
           <article class="field">
             <span class="label">Datos del empleado</span>
-            <span class="value">${this.escapeHtml(this.displayEntityData(boleta.datosEmpleado))}</span>
+            <span class="value">${this.escapeHtml(this.pedidoUserSummary(boleta))}</span>
           </article>
         </div>
 
@@ -317,6 +362,10 @@ export class BoletasPageComponent {
       .replace(/([a-z])([A-Z])/g, '$1 $2')
       .replaceAll('_', ' ')
       .replace(/^\w/, (char) => char.toUpperCase());
+  }
+
+  private capitalize(value: string): string {
+    return value ? value.charAt(0).toUpperCase() + value.slice(1).toLowerCase() : value;
   }
 
   private escapeHtml(value: unknown): string {

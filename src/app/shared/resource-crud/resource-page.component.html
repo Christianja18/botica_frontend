@@ -28,6 +28,12 @@
     <div class="banner banner-error">{{ errorMessage() }}</div>
   }
 
+  @if (viewMode() === 'list' && pickerTarget() && pickerFieldParam()) {
+    <div class="banner">
+      Selecciona un registro para volver al formulario anterior con ese dato cargado.
+    </div>
+  }
+
   @if (viewMode() === 'form') {
     <article class="surface panel">
       <div class="panel-header">
@@ -57,12 +63,33 @@
                   <textarea class="field-control textarea" [formControlName]="field.key"></textarea>
                 } @else if (field.type === 'select') {
                   <span class="field-label">{{ field.label }}</span>
-                  <select class="field-control" [formControlName]="field.key">
-                    <option value="">Selecciona una opcion</option>
-                    @for (option of lookupOptions()[field.lookup!.resource]; track $index) {
-                      <option [value]="option[field.lookup!.valueKey]">{{ option[field.lookup!.labelKey] }}</option>
+                  @if (field.pickerOnly && field.pickerRoute) {
+                    <input
+                      class="field-control field-control-readonly"
+                      type="text"
+                      [value]="pickerDisplayValue(field)"
+                      readonly
+                    />
+                    <div class="field-picker-row">
+                      <button class="btn btn-ghost" type="button" (click)="openFieldPicker(field)">
+                        {{ field.pickerButtonLabel || 'Buscar en otra vista' }}
+                      </button>
+                    </div>
+                  } @else {
+                    <select class="field-control" [formControlName]="field.key">
+                      <option value="">Selecciona una opcion</option>
+                      @for (option of lookupOptions()[field.lookup!.resource]; track $index) {
+                        <option [value]="option[field.lookup!.valueKey]">{{ lookupOptionLabel(field.lookup!, option) }}</option>
+                      }
+                    </select>
+                    @if (field.pickerRoute) {
+                      <div class="field-picker-row">
+                        <button class="btn btn-ghost" type="button" (click)="openFieldPicker(field)">
+                          {{ field.pickerButtonLabel || 'Buscar en otra vista' }}
+                        </button>
+                      </div>
                     }
-                  </select>
+                  }
                 } @else {
                   <span class="field-label">{{ field.label }}</span>
                   <input
@@ -129,6 +156,11 @@
                   }
                   <td>
                     <div class="button-row">
+                      @if (pickerTarget() && pickerFieldParam()) {
+                        <button class="btn btn-primary" type="button" (click)="selectItemForPicker(item)">
+                          Seleccionar
+                        </button>
+                      }
                       <button class="btn btn-ghost" type="button" (click)="editItem(item)">Actualizar</button>
                       <button class="btn btn-danger" type="button" (click)="deleteItem(item)">Eliminar</button>
                     </div>

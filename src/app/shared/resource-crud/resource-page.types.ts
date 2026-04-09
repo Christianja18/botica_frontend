@@ -17,6 +17,7 @@ export interface LookupConfig {
   resource: CrudResourceKey;
   labelKey: string;
   valueKey: string;
+  displayWith?: (option: Record<string, unknown>) => string;
 }
 
 export interface ResourceColumnConfig {
@@ -43,6 +44,11 @@ export interface ResourceFieldConfig {
   maxDate?: string | 'today';
   pattern?: string;
   lookup?: LookupConfig;
+  pickerOnly?: boolean;
+  pickerRoute?: string;
+  pickerButtonLabel?: string;
+  pickerQueryParams?: Record<string, string | number | boolean>;
+  selectionQueryParam?: string;
   hiddenInForm?: boolean;
   helpText?: string;
 }

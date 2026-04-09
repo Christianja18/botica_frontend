@@ -20,6 +20,12 @@
     <div class="banner banner-error">{{ errorMessage() }}</div>
   }
 
+  @if (selectorMode() === 'boleta' && viewMode() === 'list') {
+    <div class="banner">
+      Selecciona un pedido del historial para volver automaticamente a boletas con ese pedido cargado.
+    </div>
+  }
+
   @if (viewMode() === 'form') {
     <article class="surface panel">
       <div class="panel-header">
@@ -33,21 +39,17 @@
         <div class="form-grid">
           <label class="field">
             <span class="field-label">Cliente</span>
-            <select class="field-control" formControlName="idCliente">
-              <option [ngValue]="null">Venta sin cliente</option>
-              @for (cliente of clientes(); track cliente.idCliente) {
-                <option [ngValue]="cliente.idCliente">{{ cliente.nombre }} {{ cliente.apellido }}</option>
-              }
-            </select>
+            <input class="field-control field-control-readonly" type="text" [value]="selectedClientLabel()" readonly />
+            <div class="field-picker-row">
+              <button class="btn btn-ghost" type="button" (click)="openClientPicker()">Buscar cliente</button>
+            </div>
           </label>
           <label class="field">
             <span class="field-label">Usuario</span>
-            <select class="field-control" formControlName="idUsuario">
-              <option [ngValue]="null">Selecciona un usuario</option>
-              @for (usuario of usuarios(); track usuario.idUsuario) {
-                <option [ngValue]="usuario.idUsuario">{{ usuario.nombre }} {{ usuario.apellido }}</option>
-              }
-            </select>
+            <input class="field-control field-control-readonly" type="text" [value]="selectedUserLabel()" readonly />
+            <div class="field-picker-row">
+              <button class="btn btn-ghost" type="button" (click)="openUserPicker()">Buscar usuario</button>
+            </div>
           </label>
           <label class="field">
             <span class="field-label">Estado</span>
@@ -73,12 +75,10 @@
               <div class="detail-row">
                 <label class="field">
                   <span class="field-label">Producto</span>
-                  <select class="field-control" formControlName="idProducto" (change)="productChanged($index)">
-                    <option [ngValue]="null">Selecciona un producto</option>
-                    @for (producto of productos(); track producto.idProducto) {
-                      <option [ngValue]="producto.idProducto">{{ producto.nombre }}</option>
-                    }
-                  </select>
+                  <input class="field-control field-control-readonly" type="text" [value]="selectedProductLabel($index)" readonly />
+                  <div class="field-picker-row">
+                    <button class="btn btn-ghost" type="button" (click)="openProductPicker($index)">Buscar producto</button>
+                  </div>
                 </label>
                 <label class="field">
                   <span class="field-label">Cantidad</span>
@@ -168,6 +168,11 @@
                 }
               </div>
               <div class="form-actions">
+                @if (selectorMode() === 'boleta') {
+                  <button class="btn btn-primary" type="button" (click)="selectOrderForBoleta(pedido)">
+                    Usar en boleta
+                  </button>
+                }
                 <button class="btn btn-ghost" type="button" (click)="editOrder(pedido)">Actualizar</button>
                 <button class="btn btn-danger" type="button" (click)="deleteOrder(pedido)">Eliminar</button>
               </div>
