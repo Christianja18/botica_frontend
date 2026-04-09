@@ -1,0 +1,8 @@
+:host {
+  display: block;
+}
+
+.orders-filter,
+.detail-header {
+  margin-top: 1rem;
+}

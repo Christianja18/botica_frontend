@@ -1,0 +1,67 @@
+<section class="login-layout">
+  <div class="login-hero">
+    <div>
+      <p class="page-kicker">Frontend Angular para Botica</p>
+      <h1>{{ appName }}</h1>
+      <p class="login-copy">
+        Sistema integrado de farmacia con módulos de ventas, inventario, catálogos y reportes,
+        alineado con los controladores disponibles en `botica_backend`.
+      </p>
+    </div>
+
+    <div class="hero-cards">
+      <article class="surface hero-card">
+        <span class="pill">CRUDs conectados</span>
+        <h2>Interfaces basadas en controladores Spring</h2>
+        <p>Usuarios, roles, clientes, productos, inventario, pedidos, boletas y reportes.</p>
+      </article>
+      <article class="surface hero-card">
+        <span class="pill">Autenticación backend</span>
+        <h2>Login real con sesión</h2>
+        <p>El acceso ya consume `/api/auth/login`, devuelve token y mantiene la sesión activa en el frontend.</p>
+      </article>
+    </div>
+  </div>
+
+  <div class="surface surface-strong login-panel">
+    <div>
+      <p class="page-kicker">Acceso</p>
+      <h2 class="login-title">Ingresar al sistema</h2>
+      <p class="panel-subtitle">Los usuarios semilla del SQL comparten la clave de desarrollo `Botica2026!`.</p>
+    </div>
+
+    <div class="banner banner-info">
+      Flujo activo: <strong>login real</strong>, token persistido en sesión del navegador y `logout` contra backend.
+    </div>
+
+    @if (errorMessage()) {
+      <div class="banner banner-error">{{ errorMessage() }}</div>
+    }
+
+    <form class="login-form" [formGroup]="form" (ngSubmit)="submit()">
+      <label class="field">
+        <span class="field-label">Correo</span>
+        <input class="field-control" type="email" formControlName="email" placeholder="maria.perez@botica.com" />
+      </label>
+      <label class="field">
+        <span class="field-label">Contraseña</span>
+        <input class="field-control" type="password" formControlName="password" placeholder="Botica2026!" />
+      </label>
+      <div class="form-actions">
+        <button class="btn btn-primary" type="submit" [disabled]="loading()">
+          {{ loading() ? 'Ingresando...' : 'Entrar al sistema' }}
+        </button>
+      </div>
+    </form>
+
+    <div class="demo-grid">
+      @for (credential of credentials; track credential.email) {
+        <button class="demo-card" type="button" (click)="useCredential(credential)" [disabled]="loading()">
+          <span class="pill">{{ credential.rolNombre }}</span>
+          <strong>{{ credential.email }}</strong>
+          <small>Completa el formulario con esta cuenta</small>
+        </button>
+      }
+    </div>
+  </div>
+</section>

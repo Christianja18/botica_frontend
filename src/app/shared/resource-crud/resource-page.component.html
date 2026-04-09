@@ -1,0 +1,130 @@
+<section class="page-shell">
+  <header class="surface page-hero">
+    <p class="page-kicker">Modulo CRUD</p>
+    <h1 class="page-title">{{ config().title }}</h1>
+    <p class="page-description">{{ config().description }}</p>
+    <div class="page-toolbar">
+      <input
+        class="search-input"
+        type="search"
+        placeholder="Buscar registros..."
+        [value]="searchTerm()"
+        (input)="searchTerm.set($any($event.target).value)"
+      />
+      <button class="btn btn-ghost" type="button" (click)="loadPage()">Actualizar</button>
+    </div>
+  </header>
+
+  @if (errorMessage()) {
+    <div class="banner banner-error">{{ errorMessage() }}</div>
+  }
+
+  <section class="split-layout">
+    <article class="surface panel">
+      <div class="panel-header">
+        <div>
+          <h2 class="panel-title">
+            {{ editingId() ? 'Editar ' + config().createLabel : 'Nuevo ' + config().createLabel }}
+          </h2>
+          <p class="panel-subtitle">Formulario alineado con los DTOs del backend.</p>
+        </div>
+      </div>
+
+      <form [formGroup]="form" (ngSubmit)="save()">
+        <div class="form-grid">
+          @for (field of config().fields; track field.key) {
+            @if (!field.hiddenInForm) {
+              <label class="field" [class.checkbox-field]="field.type === 'checkbox'">
+                @if (field.type === 'checkbox') {
+                  <input class="field-control" type="checkbox" [formControlName]="field.key" />
+                  <div>
+                    <span class="field-label">{{ field.label }}</span>
+                    @if (field.helpText) {
+                      <div class="field-help">{{ field.helpText }}</div>
+                    }
+                  </div>
+                } @else if (field.type === 'textarea') {
+                  <span class="field-label">{{ field.label }}</span>
+                  <textarea class="field-control textarea" [formControlName]="field.key"></textarea>
+                } @else if (field.type === 'select') {
+                  <span class="field-label">{{ field.label }}</span>
+                  <select class="field-control" [formControlName]="field.key">
+                    <option value="">Selecciona una opcion</option>
+                    @for (option of lookupOptions()[field.lookup!.resource]; track $index) {
+                      <option [value]="option[field.lookup!.valueKey]">{{ option[field.lookup!.labelKey] }}</option>
+                    }
+                  </select>
+                } @else {
+                  <span class="field-label">{{ field.label }}</span>
+                  <input
+                    class="field-control"
+                    [type]="fieldInputType(field)"
+                    [formControlName]="field.key"
+                    [step]="field.step ?? null"
+                    [min]="field.min ?? null"
+                  />
+                }
+                @if (field.helpText && field.type !== 'checkbox') {
+                  <span class="field-help">{{ field.helpText }}</span>
+                }
+                @if (controlInvalid(field.key)) {
+                  <span class="field-error">Revisa el campo {{ field.label.toLowerCase() }}.</span>
+                }
+              </label>
+            }
+          }
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-primary" type="submit" [disabled]="saving()">
+            {{ saving() ? 'Guardando...' : editingId() ? 'Actualizar' : 'Crear' }}
+          </button>
+          <button class="btn btn-secondary" type="button" (click)="resetForm()">Limpiar</button>
+        </div>
+      </form>
+    </article>
+
+    <article class="surface panel">
+      <div class="panel-header">
+        <div>
+          <h2 class="panel-title">Listado</h2>
+          <p class="panel-subtitle">Registros disponibles desde `/api/{{ config().key }}`.</p>
+        </div>
+        <span class="pill">{{ filteredItems().length }} elementos</span>
+      </div>
+
+      @if (loading()) {
+        <div class="empty-state"><strong>Cargando {{ config().createLabel }}s...</strong></div>
+      } @else if (!filteredItems().length) {
+        <div class="empty-state">{{ config().emptyState }}</div>
+      } @else {
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                @for (column of config().columns; track column.key) {
+                  <th>{{ column.label }}</th>
+                }
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (item of filteredItems(); track item[config().idKey]) {
+                <tr>
+                  @for (column of config().columns; track column.key) {
+                    <td>{{ formatValue(item, column) }}</td>
+                  }
+                  <td>
+                    <div class="button-row">
+                      <button class="btn btn-ghost" type="button" (click)="editItem(item)">Editar</button>
+                      <button class="btn btn-danger" type="button" (click)="deleteItem(item)">Eliminar</button>
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </article>
+  </section>
+</section>

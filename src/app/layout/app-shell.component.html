@@ -1,0 +1,59 @@
+<div class="shell">
+  <aside class="shell-sidebar surface" [class.open]="sidebarOpen()">
+    <div class="brand-block">
+      <div class="brand-mark">+</div>
+      <div>
+        <p class="brand-kicker">Botica</p>
+        <h1 class="brand-title">{{ appName }}</h1>
+        <p class="brand-copy">{{ appTagline }}</p>
+      </div>
+    </div>
+
+    <div class="sidebar-meta banner banner-info">
+      <strong>Autenticación activa</strong>
+      El frontend usa `/api/auth/login`, conserva el token en sesión y ejecuta `logout` contra backend.
+    </div>
+
+    @for (section of sections(); track section.title) {
+      <section class="nav-section">
+        <p class="nav-section-title">{{ section.title }}</p>
+        <div class="nav-links">
+          @for (item of section.items; track item.route) {
+            <a
+              [routerLink]="item.route"
+              routerLinkActive="active"
+              class="nav-link"
+              (click)="closeSidebar()"
+            >
+              <span class="nav-label">{{ item.label }}</span>
+              <span class="nav-caption">{{ item.caption }}</span>
+            </a>
+          }
+        </div>
+      </section>
+    }
+  </aside>
+
+  <div class="shell-main">
+    <header class="shell-header surface">
+      <button class="btn btn-ghost shell-menu" type="button" (click)="toggleSidebar()">Menú</button>
+
+      <div class="shell-heading">
+        <p class="page-kicker">Sistema Integral</p>
+        <h2 class="shell-title">{{ appName }}</h2>
+      </div>
+
+      <div class="shell-user">
+        <div>
+          <p class="shell-user-name">{{ currentUser()?.nombreCompleto }}</p>
+          <p class="shell-user-role">{{ currentUser()?.rolNombre }} · {{ currentUser()?.email }}</p>
+        </div>
+        <button class="btn btn-secondary" type="button" (click)="logout()">Cerrar sesión</button>
+      </div>
+    </header>
+
+    <main class="shell-content">
+      <router-outlet />
+    </main>
+  </div>
+</div>

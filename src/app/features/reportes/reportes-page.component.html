@@ -1,0 +1,146 @@
+<section class="page-shell">
+  <header class="surface page-hero">
+    <p class="page-kicker">Analítica y control</p>
+    <h1 class="page-title">Reportes</h1>
+    <p class="page-description">Genera reportes de ventas e inventario usando los endpoints especiales del backend y consulta el histórico generado.</p>
+    <div class="page-toolbar">
+      <span class="pill">{{ reportes().length }} reportes almacenados</span>
+      <button class="btn btn-ghost" type="button" (click)="loadPage()">Actualizar</button>
+    </div>
+  </header>
+
+  @if (errorMessage()) {
+    <div class="banner banner-error">{{ errorMessage() }}</div>
+  }
+
+  <section class="split-layout">
+    <article class="surface panel">
+      <div class="panel-header">
+        <div>
+          <h2 class="panel-title">Generar reporte de ventas</h2>
+          <p class="panel-subtitle">El backend espera fechas en formato `dd/MM/yyyy`.</p>
+        </div>
+      </div>
+      <form [formGroup]="salesForm" (ngSubmit)="createSalesReport()">
+        <div class="form-grid">
+          <label class="field">
+            <span class="field-label">Fecha inicio</span>
+            <input class="field-control" type="date" formControlName="fechaInicio" />
+          </label>
+          <label class="field">
+            <span class="field-label">Fecha fin</span>
+            <input class="field-control" type="date" formControlName="fechaFin" />
+          </label>
+          <label class="field">
+            <span class="field-label">Generado por</span>
+            <select class="field-control" formControlName="idUsuario">
+              <option [ngValue]="null">Selecciona un usuario</option>
+              @for (usuario of usuarios(); track usuario.idUsuario) {
+                <option [ngValue]="usuario.idUsuario">{{ usuario.nombre }} {{ usuario.apellido }}</option>
+              }
+            </select>
+          </label>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-primary" type="submit" [disabled]="generating()">
+            {{ generating() ? 'Generando...' : 'Generar ventas' }}
+          </button>
+        </div>
+      </form>
+
+      <div class="panel-header inventory-block">
+        <div>
+          <h2 class="panel-title">Generar reporte de inventario</h2>
+          <p class="panel-subtitle">Consulta inmediata del inventario y productos con stock bajo.</p>
+        </div>
+      </div>
+      <form [formGroup]="inventoryForm" (ngSubmit)="createInventoryReport()">
+        <div class="form-grid">
+          <label class="field">
+            <span class="field-label">Generado por</span>
+            <select class="field-control" formControlName="idUsuario">
+              <option [ngValue]="null">Selecciona un usuario</option>
+              @for (usuario of usuarios(); track usuario.idUsuario) {
+                <option [ngValue]="usuario.idUsuario">{{ usuario.nombre }} {{ usuario.apellido }}</option>
+              }
+            </select>
+          </label>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-secondary" type="submit" [disabled]="generating()">
+            {{ generating() ? 'Generando...' : 'Generar inventario' }}
+          </button>
+        </div>
+      </form>
+    </article>
+
+    <article class="surface panel">
+      <div class="panel-header">
+        <div>
+          <h2 class="panel-title">Historial de reportes</h2>
+          <p class="panel-subtitle">Registros persistidos en `/api/reportes`.</p>
+        </div>
+      </div>
+      @if (loading()) {
+        <div class="empty-state"><strong>Cargando reportes...</strong></div>
+      } @else if (!reportes().length) {
+        <div class="empty-state">No hay reportes generados todavía.</div>
+      } @else {
+        <div class="mini-list">
+          @for (report of reportes(); track report.idReporte) {
+            <article class="surface order-card">
+              <div class="panel-header">
+                <div>
+                  <span class="pill">{{ report.tipoReporte }}</span>
+                  <h3 class="panel-title">Reporte #{{ report.idReporte }}</h3>
+                  <p class="panel-subtitle">{{ report.fechaGeneracion || 'Sin fecha' }} · {{ reportOwner(report.generadoPor) }}</p>
+                </div>
+                <button class="btn btn-danger" type="button" (click)="deleteReport(report)">Eliminar</button>
+              </div>
+              <p class="muted">{{ reportDataPreview(report) }}</p>
+              @if (report.archivoPath) {
+                <p class="muted">Archivo: {{ report.archivoPath }}</p>
+              }
+            </article>
+          }
+        </div>
+      }
+    </article>
+  </section>
+
+  <section class="card-grid">
+    <article class="surface panel">
+      <h2 class="panel-title">Ventas mensuales</h2>
+      <div class="bar-list">
+        @for (item of ventasMensuales(); track monthLabel(item)) {
+          <article class="bar-row">
+            <div class="bar-meta">
+              <strong>{{ monthLabel(item) }}</strong>
+              <span>{{ metricValue(item, 'sales') | currency: 'PEN':'symbol':'1.2-2' }}</span>
+            </div>
+            <div class="bar-track">
+              <div class="bar-fill" [style.width.%]="barWidth(item, 'sales')"></div>
+            </div>
+          </article>
+        }
+      </div>
+    </article>
+
+    <article class="surface panel">
+      <h2 class="panel-title">Ganancias mensuales</h2>
+      <div class="bar-list">
+        @for (item of gananciasMensuales(); track monthLabel(item)) {
+          <article class="bar-row">
+            <div class="bar-meta">
+              <strong>{{ monthLabel(item) }}</strong>
+              <span>{{ metricValue(item, 'gain') | currency: 'PEN':'symbol':'1.2-2' }}</span>
+            </div>
+            <div class="bar-track">
+              <div class="bar-fill" [style.width.%]="barWidth(item, 'gain')"></div>
+            </div>
+          </article>
+        }
+      </div>
+    </article>
+  </section>
+</section>

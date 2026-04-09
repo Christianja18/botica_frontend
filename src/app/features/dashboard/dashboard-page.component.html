@@ -1,0 +1,167 @@
+<section class="page-shell">
+  <header class="surface page-hero">
+    <p class="page-kicker">Resumen Operativo</p>
+    <h1 class="page-title">Dashboard de la botica</h1>
+    <p class="page-description">Indicadores consolidados desde los endpoints del backend para stock, ventas y alertas.</p>
+    <div class="page-toolbar">
+      <span class="pill">Año analizado: {{ 2026 }}</span>
+      <button class="btn btn-ghost" type="button" (click)="loadDashboard()">Actualizar</button>
+    </div>
+  </header>
+
+  @if (errorMessage()) {
+    <div class="banner banner-error">{{ errorMessage() }}</div>
+  }
+
+  <section class="stat-grid">
+    <article class="surface stat-card">
+      <p class="muted">Productos</p>
+      <h2 class="stat-value">{{ productos().length }}</h2>
+    </article>
+    <article class="surface stat-card">
+      <p class="muted">Clientes</p>
+      <h2 class="stat-value">{{ clientes().length }}</h2>
+    </article>
+    <article class="surface stat-card">
+      <p class="muted">Ventas completadas</p>
+      <h2 class="stat-value">{{ completedOrders() }}</h2>
+      <p class="muted">Pendientes: {{ pendingOrders() }} · Canceladas: {{ cancelledOrders() }}</p>
+    </article>
+    <article class="surface stat-card">
+      <p class="muted">Ingresos {{ 2026 }}</p>
+      <h2 class="stat-value">{{ totalVentasAnuales() | currency: 'PEN':'symbol':'1.2-2' }}</h2>
+      <p class="muted">Ganancia estimada: {{ totalGananciasAnuales() | currency: 'PEN':'symbol':'1.2-2' }}</p>
+    </article>
+  </section>
+
+  @if (loading()) {
+    <div class="surface empty-state"><strong>Cargando dashboard...</strong></div>
+  } @else {
+    <section class="card-grid">
+      <article class="surface panel">
+        <div class="panel-header">
+          <div>
+            <h2 class="panel-title">Inventario bajo</h2>
+            <p class="panel-subtitle">Productos cuyo stock ya está por debajo del mínimo.</p>
+          </div>
+          <span class="pill">{{ inventarioBajo().length }} alertas</span>
+        </div>
+        <div class="mini-list">
+          @for (item of inventarioBajo(); track item.nombre) {
+            <article class="mini-row">
+              <div>
+                <strong>{{ item.nombre }}</strong>
+                <p class="muted">{{ inventoryStock(item) }}</p>
+              </div>
+              <span class="status-pill pending">Reponer</span>
+            </article>
+          } @empty {
+            <div class="empty-state">No hay productos con stock crítico.</div>
+          }
+        </div>
+      </article>
+
+      <article class="surface panel">
+        <div class="panel-header">
+          <div>
+            <h2 class="panel-title">Productos por vencer</h2>
+            <p class="panel-subtitle">Ventana de 30 días según el endpoint de reportes.</p>
+          </div>
+        </div>
+        <div class="mini-list">
+          @for (item of porVencer(); track item.nombre) {
+            <article class="mini-row">
+              <div>
+                <strong>{{ item.nombre }}</strong>
+                <p class="muted">{{ expiringDate(item) }} · {{ expiringDays(item) }}</p>
+              </div>
+              <span class="status-pill pending">Vigilar</span>
+            </article>
+          } @empty {
+            <div class="empty-state">No hay productos próximos a vencer.</div>
+          }
+        </div>
+      </article>
+
+      <article class="surface panel">
+        <div class="panel-header">
+          <div>
+            <h2 class="panel-title">Productos vencidos</h2>
+            <p class="panel-subtitle">Alertas ya vencidas detectadas por el backend.</p>
+          </div>
+        </div>
+        <div class="mini-list">
+          @for (item of vencidos(); track item.nombre) {
+            <article class="mini-row">
+              <div>
+                <strong>{{ item.nombre }}</strong>
+                <p class="muted">{{ expiringDate(item) }}</p>
+              </div>
+              <span class="status-pill cancelled">Retirar</span>
+            </article>
+          } @empty {
+            <div class="empty-state">No hay productos vencidos registrados.</div>
+          }
+        </div>
+      </article>
+
+      <article class="surface panel">
+        <div class="panel-header">
+          <div>
+            <h2 class="panel-title">Equipo activo</h2>
+            <p class="panel-subtitle">Usuarios existentes en el sistema backend.</p>
+          </div>
+        </div>
+        <div class="mini-list">
+          @for (usuario of usuarios(); track usuario.idUsuario) {
+            <article class="mini-row">
+              <div>
+                <strong>{{ usuario.nombre }} {{ usuario.apellido }}</strong>
+                <p class="muted">{{ usuario.email }}</p>
+              </div>
+              <span class="status-pill" [class.completed]="usuario.activo" [class.cancelled]="!usuario.activo">
+                {{ usuario.activo ? 'Activo' : 'Inactivo' }}
+              </span>
+            </article>
+          }
+        </div>
+      </article>
+    </section>
+
+    <section class="card-grid">
+      <article class="surface panel">
+        <h2 class="panel-title">Ventas por mes</h2>
+        <div class="bar-list">
+          @for (item of ventasMensuales(); track metricMonth(item)) {
+            <article class="bar-row">
+              <div class="bar-meta">
+                <strong>{{ metricMonth(item) }}</strong>
+                <span>{{ metricValue(item, 'sales') | currency: 'PEN':'symbol':'1.2-2' }}</span>
+              </div>
+              <div class="bar-track">
+                <div class="bar-fill" [style.width.%]="metricBarWidth(item, 'sales')"></div>
+              </div>
+            </article>
+          }
+        </div>
+      </article>
+
+      <article class="surface panel">
+        <h2 class="panel-title">Ganancias por mes</h2>
+        <div class="bar-list">
+          @for (item of gananciasMensuales(); track metricMonth(item)) {
+            <article class="bar-row">
+              <div class="bar-meta">
+                <strong>{{ metricMonth(item) }}</strong>
+                <span>{{ metricValue(item, 'gain') | currency: 'PEN':'symbol':'1.2-2' }}</span>
+              </div>
+              <div class="bar-track">
+                <div class="bar-fill" [style.width.%]="metricBarWidth(item, 'gain')"></div>
+              </div>
+            </article>
+          }
+        </div>
+      </article>
+    </section>
+  }
+</section>
