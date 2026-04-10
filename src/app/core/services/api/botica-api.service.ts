@@ -21,6 +21,8 @@ import { UsuariosService } from '../../../features/usuarios/services';
   providedIn: 'root',
 })
 export class BoticaApiService {
+  private readonly crudServices: Record<CrudResourceKey, CrudServiceFacade<unknown>>;
+
   constructor(
     private readonly usuariosService: UsuariosService,
     private readonly rolesService: RolesService,
@@ -33,7 +35,21 @@ export class BoticaApiService {
     private readonly detallesPedidoService: DetallesPedidoService,
     private readonly boletasService: BoletasService,
     private readonly reportesService: ReportesService,
-  ) {}
+  ) {
+    this.crudServices = {
+      usuarios: this.usuariosService,
+      roles: this.rolesService,
+      clientes: this.clientesService,
+      categorias: this.categoriasService,
+      proveedores: this.proveedoresService,
+      productos: this.productosService,
+      inventario: this.inventarioService,
+      pedidos: this.pedidosService,
+      'detalles-pedido': this.detallesPedidoService,
+      boletas: this.boletasService,
+      reportes: this.reportesService,
+    };
+  }
 
   list<T>(resource: CrudResourceKey): Observable<T[]> {
     return this.selectCrudService<T>(resource).list();
@@ -92,32 +108,7 @@ export class BoticaApiService {
   }
 
   private selectCrudService<T>(resource: CrudResourceKey): CrudServiceFacade<T> {
-    switch (resource) {
-      case 'usuarios':
-        return this.usuariosService as unknown as CrudServiceFacade<T>;
-      case 'roles':
-        return this.rolesService as unknown as CrudServiceFacade<T>;
-      case 'clientes':
-        return this.clientesService as unknown as CrudServiceFacade<T>;
-      case 'categorias':
-        return this.categoriasService as unknown as CrudServiceFacade<T>;
-      case 'proveedores':
-        return this.proveedoresService as unknown as CrudServiceFacade<T>;
-      case 'productos':
-        return this.productosService as unknown as CrudServiceFacade<T>;
-      case 'inventario':
-        return this.inventarioService as unknown as CrudServiceFacade<T>;
-      case 'pedidos':
-        return this.pedidosService as unknown as CrudServiceFacade<T>;
-      case 'detalles-pedido':
-        return this.detallesPedidoService as unknown as CrudServiceFacade<T>;
-      case 'boletas':
-        return this.boletasService as unknown as CrudServiceFacade<T>;
-      case 'reportes':
-        return this.reportesService as unknown as CrudServiceFacade<T>;
-      default:
-        throw new Error(`Recurso no soportado: ${resource}`);
-    }
+    return this.crudServices[resource] as CrudServiceFacade<T>;
   }
 }
 

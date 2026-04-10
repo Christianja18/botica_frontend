@@ -18,6 +18,21 @@ import { ProductoDTO } from '../productos/models';
 import { ProductosService } from '../productos/services';
 import { UsuarioDTO } from '../usuarios/models';
 import { UsuariosService } from '../usuarios/services';
+import {
+  buildClientLabel,
+  buildOrderClientLabel,
+  buildOrderDetailProductLabel,
+  buildOrderUserLabel,
+  buildProductLabel,
+  buildUserLabel,
+  daysUntilExpiration as calculateDaysUntilExpiration,
+  findInventory,
+  findProduct,
+  isProductExpired as productIsExpired,
+  isProductExpiringSoon as productIsExpiringSoon,
+  todayAtMidnight,
+  totalQuantityForProduct,
+} from './pedidos.logic';
 
 interface DetailFormValue {
   idDetalle: number | null;
@@ -400,36 +415,27 @@ export class PedidosPageComponent implements OnDestroy {
   }
 
   clientLabel(idCliente: number | null | undefined): string {
-    if (!idCliente) return 'Venta sin cliente';
-    const client = this.clientes().find((item) => item.idCliente === idCliente);
-    return client ? `${client.nombre} ${client.apellido}` : `Cliente #${idCliente}`;
+    return buildClientLabel(this.clientes(), idCliente);
   }
 
   orderClientLabel(order: PedidoDTO): string {
-    const summary = order.cliente;
-    const summaryName = [summary?.nombre, summary?.apellido].filter(Boolean).join(' ').trim();
-    return summaryName || this.clientLabel(order.idCliente);
+    return buildOrderClientLabel(this.clientes(), order);
   }
 
   userLabel(idUsuario: number | null | undefined): string {
-    const user = this.usuarios().find((item) => item.idUsuario === idUsuario);
-    return user ? `${user.nombre} ${user.apellido}` : `Usuario #${idUsuario}`;
+    return buildUserLabel(this.usuarios(), idUsuario);
   }
 
   orderUserLabel(order: PedidoDTO): string {
-    const summary = order.usuario;
-    const summaryName = [summary?.nombre, summary?.apellido].filter(Boolean).join(' ').trim();
-    return summaryName || this.userLabel(order.idUsuario);
+    return buildOrderUserLabel(this.usuarios(), order);
   }
 
   productLabel(idProducto: number | null | undefined): string {
-    const product = this.productos().find((item) => item.idProducto === idProducto);
-    return product ? product.nombre : `Producto #${idProducto}`;
+    return buildProductLabel(this.productos(), idProducto);
   }
 
   orderDetailProductLabel(detail: DetallePedidoDTO): string {
-    const summaryName = detail.producto?.nombre?.trim();
-    return summaryName || this.productLabel(detail.idProducto);
+    return buildOrderDetailProductLabel(this.productos(), detail);
   }
 
   selectedClientLabel(): string {
@@ -661,19 +667,11 @@ export class PedidosPageComponent implements OnDestroy {
   }
 
   private productById(productId: number | null | undefined): ProductoDTO | undefined {
-    if (!productId) {
-      return undefined;
-    }
-
-    return this.productos().find((item) => item.idProducto === productId);
+    return findProduct(this.productos(), productId);
   }
 
   private inventoryByProductId(productId: number | null | undefined): InventarioDTO | undefined {
-    if (!productId) {
-      return undefined;
-    }
-
-    return this.inventario().find((item) => item.idProducto === productId);
+    return findInventory(this.inventario(), productId);
   }
 
   private availableStock(productId: number | null | undefined): number {
@@ -708,11 +706,13 @@ export class PedidosPageComponent implements OnDestroy {
   }
 
   private currentDraftQuantity(productId: number): number {
-    return this.detailsArray.controls.reduce((sum, group) => {
-      return Number(group.controls.idProducto.value) === productId
-        ? sum + Number(group.controls.cantidad.value ?? 0)
-        : sum;
-    }, 0);
+    return totalQuantityForProduct(
+      this.detailsArray.controls.map((group) => ({
+        idProducto: group.controls.idProducto.value,
+        cantidad: group.controls.cantidad.value,
+      })),
+      productId,
+    );
   }
 
   private originalCommittedQuantity(productId: number): number {
@@ -721,48 +721,19 @@ export class PedidosPageComponent implements OnDestroy {
       return 0;
     }
 
-    return (originalOrder.detalles ?? []).reduce((sum, detail) => {
-      return Number(detail.idProducto) === productId ? sum + Number(detail.cantidad ?? 0) : sum;
-    }, 0);
+    return totalQuantityForProduct(originalOrder.detalles ?? [], productId);
   }
 
   private isProductExpired(product: ProductoDTO | null | undefined): boolean {
-    const expirationDate = this.parseDateOnly(product?.fechaVencimiento);
-    if (!expirationDate) {
-      return false;
-    }
-
-    return expirationDate.getTime() < this.todayAtMidnight().getTime();
+    return productIsExpired(product, todayAtMidnight());
   }
 
   private isProductExpiringSoon(product: ProductoDTO | null | undefined): boolean {
-    const days = this.daysUntilExpiration(product);
-    return days !== null && days >= 0 && days <= 30;
+    return productIsExpiringSoon(product, todayAtMidnight());
   }
 
   private daysUntilExpiration(product: ProductoDTO | null | undefined): number | null {
-    const expirationDate = this.parseDateOnly(product?.fechaVencimiento);
-    if (!expirationDate) {
-      return null;
-    }
-
-    const diff = expirationDate.getTime() - this.todayAtMidnight().getTime();
-    return Math.floor(diff / 86400000);
-  }
-
-  private parseDateOnly(value: string | null | undefined): Date | null {
-    if (!value) {
-      return null;
-    }
-
-    const date = new Date(`${value}T00:00:00`);
-    return Number.isNaN(date.getTime()) ? null : date;
-  }
-
-  private todayAtMidnight(): Date {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    return today;
+    return calculateDaysUntilExpiration(product, todayAtMidnight());
   }
 
   private setBackgroundScrollLocked(locked: boolean): void {
