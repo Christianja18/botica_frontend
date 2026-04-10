@@ -19,7 +19,6 @@ export const usuariosPageConfig: ResourcePageConfig = {
       lookup: { resource: 'roles', labelKey: 'nombre', valueKey: 'idRol' },
     },
     { key: 'activo', label: 'Activo', type: 'boolean' },
-    { key: 'fechaCreacion', label: 'Creacion', type: 'datetime' },
   ],
   fields: [
     { key: 'nombre', label: 'Nombre', type: 'text', required: true, maxLength: 100 },

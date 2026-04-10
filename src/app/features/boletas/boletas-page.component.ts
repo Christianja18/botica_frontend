@@ -105,9 +105,6 @@ export class BoletasPageComponent {
     }
 
     const parts = [`Pedido #${pedido.idPedido ?? boleta.idPedido}`];
-    if (pedido.fechaPedido) {
-      parts.push(pedido.fechaPedido);
-    }
     if (pedido.estado) {
       parts.push(this.capitalize(pedido.estado));
     }
@@ -121,29 +118,28 @@ export class BoletasPageComponent {
   pedidoClientSummary(boleta: BoletaDTO): string {
     const cliente = boleta.pedido?.cliente;
     if (!cliente) {
-      return this.displayEntityData(boleta.datosCliente);
+      return this.displayEntityData(boleta.datosCliente, ['email']);
     }
 
     const name = [cliente.nombre, cliente.apellido].filter(Boolean).join(' ').trim();
-    const details = [name, cliente.dni ? `DNI: ${cliente.dni}` : null, cliente.email, cliente.telefono]
+    const details = [name, cliente.dni ? `DNI: ${cliente.dni}` : null, cliente.telefono]
       .filter(Boolean)
       .join('\n');
 
-    return details || this.displayEntityData(boleta.datosCliente);
+    return details || this.displayEntityData(boleta.datosCliente, ['email']);
   }
 
   pedidoUserSummary(boleta: BoletaDTO): string {
     const usuario = boleta.pedido?.usuario;
     if (!usuario) {
-      return this.displayEntityData(boleta.datosEmpleado);
+      return this.displayEntityData(boleta.datosEmpleado, ['email']);
     }
 
     const name = [usuario.nombre, usuario.apellido].filter(Boolean).join(' ').trim();
-    const details = [name, usuario.email].filter(Boolean).join('\n');
-    return details || this.displayEntityData(boleta.datosEmpleado);
+    return name || this.displayEntityData(boleta.datosEmpleado, ['email']);
   }
 
-  displayEntityData(rawValue: string | null | undefined): string {
+  displayEntityData(rawValue: string | null | undefined, hiddenKeys: string[] = []): string {
     if (!rawValue) {
       return 'Sin datos registrados';
     }
@@ -151,6 +147,7 @@ export class BoletasPageComponent {
     try {
       const parsed = JSON.parse(rawValue) as Record<string, unknown>;
       return Object.entries(parsed)
+        .filter(([key]) => !hiddenKeys.includes(key))
         .map(([key, value]) => `${this.humanizeKey(key)}: ${value ?? '-'}`)
         .join('\n');
     } catch {
@@ -162,6 +159,12 @@ export class BoletasPageComponent {
     const total = this.boletaTotal(boleta);
     const subtotal = Number(boleta.total ?? 0);
     const igv = Number(boleta.igv ?? 0);
+    const detailRows = this.buildPrintableDetailRows(boleta);
+    const itemCount = this.boletaItemCount(boleta);
+    const issueDate = this.boletaDate(boleta);
+    const clientSummary = this.pedidoClientSummary(boleta);
+    const userSummary = this.pedidoUserSummary(boleta);
+    const pedidoNumber = boleta.pedido?.idPedido ?? boleta.idPedido ?? '-';
 
     return `<!doctype html>
 <html lang="es">
@@ -178,102 +181,129 @@ export class BoletasPageComponent {
       }
       body {
         margin: 0;
-        padding: 32px;
-        background: #f4efe5;
-        color: #1f2937;
+        padding: 8px;
+        background: #f5f5f5;
+        color: #111;
       }
-      .ticket {
-        max-width: 720px;
+      .receipt {
+        width: 80mm;
+        max-width: 80mm;
         margin: 0 auto;
-        background: #fffdf8;
-        border: 1px solid #d9c9a3;
-        border-radius: 20px;
-        overflow: hidden;
+        background: #fff;
+        border: 1px solid #222;
+        padding: 14px 12px 10px;
       }
-      .hero {
-        padding: 28px 32px 20px;
-        background: linear-gradient(135deg, #0f766e, #14532d);
-        color: white;
+      .center {
+        text-align: center;
       }
-      .hero h1 {
-        margin: 0 0 6px;
-        font-size: 28px;
+      .brand {
+        margin: 0 0 4px;
+        font-size: 24px;
+        font-weight: 800;
+        font-style: italic;
+        letter-spacing: 0.02em;
       }
-      .hero p {
+      .company-line {
         margin: 0;
-        opacity: 0.85;
+        font-size: 11px;
+        line-height: 1.25;
       }
-      .content {
-        padding: 28px 32px 32px;
+      .doc-type {
+        margin: 10px 0 6px;
+        font-size: 13px;
+        font-weight: 800;
       }
-      .grid {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 14px 18px;
-        margin-bottom: 24px;
+      .doc-number {
+        margin: 0 0 10px;
+        font-size: 14px;
+        font-weight: 800;
       }
-      .field {
-        padding: 14px 16px;
-        border: 1px solid #eadfca;
-        border-radius: 14px;
-        background: #fffcf5;
+      .section {
+        margin: 8px 0;
       }
-      .label {
-        display: block;
-        margin-bottom: 6px;
-        font-size: 12px;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        color: #6b7280;
+      .meta-row {
+        display: flex;
+        gap: 8px;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin: 2px 0;
+        font-size: 11px;
       }
-      .value {
-        font-size: 16px;
-        font-weight: 600;
+      .meta-label {
+        font-weight: 700;
+        flex: 0 0 auto;
+      }
+      .meta-value {
+        text-align: right;
+        flex: 1 1 auto;
         white-space: pre-wrap;
       }
-      .summary {
-        border-top: 1px dashed #d4c2a1;
-        border-bottom: 1px dashed #d4c2a1;
-        padding: 18px 0;
-        margin: 18px 0 24px;
+      .divider {
+        border-top: 1px dashed #222;
+        margin: 10px 0;
+      }
+      .items-head,
+      .item-row {
+        display: grid;
+        grid-template-columns: 1fr 34px 52px 58px;
+        gap: 6px;
+        align-items: start;
+      }
+      .items-head {
+        font-size: 10px;
+        font-weight: 800;
+        text-transform: uppercase;
+        margin-bottom: 6px;
+      }
+      .item-row {
+        font-size: 10px;
+        padding: 5px 0;
+        border-top: 1px dotted #bbb;
+      }
+      .item-row:first-of-type {
+        border-top: 0;
+      }
+      .item-name {
+        font-weight: 700;
+        display: block;
+      }
+      .item-code {
+        display: block;
+        margin-top: 2px;
+        font-size: 9px;
+      }
+      .numeric {
+        text-align: right;
       }
       .summary-row {
         display: flex;
         justify-content: space-between;
-        gap: 12px;
-        padding: 6px 0;
-        font-size: 16px;
+        gap: 8px;
+        margin: 3px 0;
+        font-size: 11px;
       }
       .summary-row.total {
-        font-size: 22px;
-        font-weight: 700;
-        color: #14532d;
+        margin-top: 8px;
+        font-size: 13px;
+        font-weight: 800;
+      }
+      .muted {
+        font-size: 10px;
       }
       .footer {
-        display: flex;
-        justify-content: space-between;
-        gap: 16px;
-        align-items: center;
-        font-size: 13px;
-        color: #6b7280;
-      }
-      .badge {
-        display: inline-flex;
-        padding: 8px 12px;
-        border-radius: 999px;
-        background: ${boleta.impresa ? '#dcfce7' : '#fef3c7'};
-        color: ${boleta.impresa ? '#166534' : '#92400e'};
-        font-weight: 700;
+        text-align: center;
+        font-size: 10px;
+        margin-top: 12px;
       }
       @media print {
         body {
           padding: 0;
           background: white;
         }
-        .ticket {
+        .receipt {
+          width: 80mm;
+          max-width: 80mm;
           border: 0;
-          border-radius: 0;
-          max-width: none;
         }
       }
     </style>
@@ -290,59 +320,77 @@ export class BoletasPageComponent {
     </script>
   </head>
   <body>
-    <main class="ticket">
-      <section class="hero">
-        <h1>Botica Horizonte</h1>
-        <p>Comprobante de venta</p>
+    <main class="receipt">
+      <section class="center">
+        <h1 class="brand">Josue Farma</h1>
+        <p class="company-line">BOTIQUIN & BAZAR</p>
+        <p class="company-line">RUC 20512009000</p>
+        <p class="company-line">Central: Av. Principal 123 - Trujillo</p>
+        <p class="company-line">Tel: 2130760</p>
+        <p class="doc-type">BOLETA ELECTRONICA</p>
+        <p class="doc-number">${this.escapeHtml(boleta.numeroBoleta)}</p>
       </section>
-      <section class="content">
-        <div class="grid">
-          <article class="field">
-            <span class="label">Numero de boleta</span>
-            <span class="value">${this.escapeHtml(boleta.numeroBoleta)}</span>
-          </article>
-          <article class="field">
-            <span class="label">Pedido asociado</span>
-            <span class="value">${this.escapeHtml(this.pedidoSummary(boleta))}</span>
-          </article>
-          <article class="field">
-            <span class="label">Fecha de emision</span>
-            <span class="value">${this.escapeHtml(this.boletaDate(boleta))}</span>
-          </article>
-          <article class="field">
-            <span class="label">Estado</span>
-            <span class="value">${boleta.impresa ? 'Impresa' : 'Pendiente de impresion'}</span>
-          </article>
-          <article class="field">
-            <span class="label">Datos del cliente</span>
-            <span class="value">${this.escapeHtml(this.pedidoClientSummary(boleta))}</span>
-          </article>
-          <article class="field">
-            <span class="label">Datos del empleado</span>
-            <span class="value">${this.escapeHtml(this.pedidoUserSummary(boleta))}</span>
-          </article>
+
+      <div class="divider"></div>
+
+      <section class="section">
+        <div class="meta-row">
+          <span class="meta-label">Fecha emision</span>
+          <span class="meta-value">${this.escapeHtml(issueDate)}</span>
         </div>
-
-        <section class="summary">
-          <div class="summary-row">
-            <span>Subtotal</span>
-            <strong>${this.formatCurrency(subtotal)}</strong>
-          </div>
-          <div class="summary-row">
-            <span>IGV</span>
-            <strong>${this.formatCurrency(igv)}</strong>
-          </div>
-          <div class="summary-row total">
-            <span>Total</span>
-            <strong>${this.formatCurrency(total)}</strong>
-          </div>
-        </section>
-
-        <footer class="footer">
-          <span>Documento generado desde el sistema web de la botica.</span>
-          <span class="badge">${boleta.impresa ? 'Reimpresion' : 'Primera impresion'}</span>
-        </footer>
+        <div class="meta-row">
+          <span class="meta-label">Pedido venta</span>
+          <span class="meta-value">${this.escapeHtml(String(pedidoNumber))}</span>
+        </div>
+        <div class="meta-row">
+          <span class="meta-label">Cliente</span>
+          <span class="meta-value">${this.escapeHtml(clientSummary)}</span>
+        </div>
+        <div class="meta-row">
+          <span class="meta-label">Responsable</span>
+          <span class="meta-value">${this.escapeHtml(userSummary)}</span>
+        </div>
       </section>
+
+      <div class="divider"></div>
+
+      <section class="section">
+        <div class="items-head">
+          <span>Descripcion</span>
+          <span class="numeric">Cant.</span>
+          <span class="numeric">P. Unit</span>
+          <span class="numeric">Importe</span>
+        </div>
+        ${detailRows}
+      </section>
+
+      <div class="divider"></div>
+
+      <section class="section">
+        <div class="summary-row">
+          <span>Cant. productos</span>
+          <strong>${itemCount}</strong>
+        </div>
+        <div class="summary-row">
+          <span>Subtotal</span>
+          <strong>${this.formatCurrency(subtotal)}</strong>
+        </div>
+        <div class="summary-row">
+          <span>IGV</span>
+          <strong>${this.formatCurrency(igv)}</strong>
+        </div>
+        <div class="summary-row total">
+          <span>Total</span>
+          <strong>${this.formatCurrency(total)}</strong>
+        </div>
+      </section>
+
+      <div class="divider"></div>
+
+      <footer class="footer">
+        <div>${boleta.impresa ? 'REIMPRESION' : 'PRIMERA IMPRESION'}</div>
+        <div class="muted">Documento generado desde el sistema web.</div>
+      </footer>
     </main>
   </body>
 </html>`;
@@ -355,6 +403,44 @@ export class BoletasPageComponent {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     }).format(Number(value || 0));
+  }
+
+  private boletaItemCount(boleta: BoletaDTO): number {
+    return (boleta.pedido?.detalles ?? []).reduce((sum, detail) => sum + Number(detail.cantidad ?? 0), 0);
+  }
+
+  private buildPrintableDetailRows(boleta: BoletaDTO): string {
+    const details = boleta.pedido?.detalles ?? [];
+    if (!details.length) {
+      return `
+        <div class="item-row">
+          <span>No hay detalle disponible para este pedido.</span>
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>`;
+    }
+
+    return details
+      .map((detail) => {
+        const productName = detail.producto?.nombre || `Producto #${detail.producto?.idProducto ?? '-'}`;
+        const code = detail.producto?.codigoBarras ? `Codigo: ${detail.producto.codigoBarras}` : '';
+        const quantity = Number(detail.cantidad ?? 0);
+        const unitPrice = Number(detail.precioUnitario ?? 0);
+        const rowSubtotal = Number(detail.subtotal ?? quantity * unitPrice);
+
+        return `
+        <div class="item-row">
+          <div>
+            <span class="item-name">${this.escapeHtml(productName)}</span>
+            ${code ? `<span class="item-code">${this.escapeHtml(code)}</span>` : ''}
+          </div>
+          <span class="numeric">${quantity}</span>
+          <span class="numeric">${this.formatCurrency(unitPrice)}</span>
+          <span class="numeric">${this.formatCurrency(rowSubtotal)}</span>
+        </div>`;
+      })
+      .join('');
   }
 
   private humanizeKey(key: string): string {

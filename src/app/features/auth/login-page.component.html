@@ -1,7 +1,7 @@
 <section class="login-layout">
   <div class="login-hero">
     <div>
-      <p class="page-kicker">Frontend Angular para Botica</p>
+      <p class="page-kicker">Frontend Angular para Botiquin & bazar</p>
       <h1>{{ appName }}</h1>
       <p class="login-copy">
         Sistema integrado de farmacia con módulos de ventas, inventario, catálogos y reportes,
@@ -16,9 +16,9 @@
         <p>Usuarios, roles, clientes, productos, inventario, pedidos, boletas y reportes.</p>
       </article>
       <article class="surface hero-card">
-        <span class="pill">Autenticación backend</span>
-        <h2>Login real con sesión</h2>
-        <p>El acceso ya consume `/api/auth/login`, devuelve token y mantiene la sesión activa en el frontend.</p>
+        <span class="pill">Acceso seguro</span>
+        <h2>Ingreso protegido</h2>
+        <p>Accede con tu cuenta para usar ventas, inventario, catálogos y reportes.</p>
       </article>
     </div>
   </div>
@@ -28,10 +28,6 @@
       <p class="page-kicker">Acceso</p>
       <h2 class="login-title">Ingresar al sistema</h2>
       <p class="panel-subtitle">Los usuarios semilla del SQL comparten la clave de desarrollo `Botica2026!`.</p>
-    </div>
-
-    <div class="banner banner-info">
-      Flujo activo: <strong>login real</strong>, token persistido en sesión del navegador y `logout` contra backend.
     </div>
 
     @if (errorMessage()) {

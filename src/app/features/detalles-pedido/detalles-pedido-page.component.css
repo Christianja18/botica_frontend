@@ -3,5 +3,10 @@
 }
 
 .crud-page {
-  display: block;
+  display: grid;
+  gap: 1rem;
+}
+
+.detail-banner {
+  white-space: normal;
 }

@@ -3,17 +3,11 @@
     <div class="brand-block">
       <div class="brand-mark">+</div>
       <div>
-        <p class="brand-kicker">Botica</p>
+        <p class="brand-kicker">Botiquin & bazar</p>
         <h1 class="brand-title">{{ appName }}</h1>
         <p class="brand-copy">{{ appTagline }}</p>
       </div>
     </div>
-
-    <div class="sidebar-meta banner banner-info">
-      <strong>Autenticación activa</strong>
-      El frontend usa `/api/auth/login`, conserva el token en sesión y ejecuta `logout` contra backend.
-    </div>
-
     @for (section of sections(); track section.title) {
       <section class="nav-section">
         <p class="nav-section-title">{{ section.title }}</p>

@@ -1,7 +1,7 @@
 import { DevelopmentCredential } from '../models';
 
 export const appSettings = {
-  appName: 'Botica Horizonte',
+  appName: 'Josue Farma',
   appTagline: 'Gestión comercial, inventario y reportes para farmacia',
   apiBaseUrl: 'http://localhost:8082/api',
   authStorageKey: 'botica-horizonte-auth',

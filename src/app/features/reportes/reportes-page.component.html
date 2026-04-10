@@ -5,7 +5,7 @@
     <p class="page-description">Genera reportes de ventas e inventario usando los endpoints especiales del backend y consulta el histórico generado.</p>
     <div class="page-toolbar">
       <span class="pill">{{ reportes().length }} reportes almacenados</span>
-      <button class="btn btn-ghost" type="button" (click)="loadPage()">Actualizar</button>
+      <button class="btn btn-ghost" type="button" (click)="loadPage('Actualizando reportes...')">Actualizar</button>
     </div>
   </header>
 
@@ -149,4 +149,16 @@
       </div>
     </article>
   </section>
+
+  @if (generating() || actionLoading()) {
+    <div class="saving-overlay">
+      <div class="surface saving-card">
+        <div class="saving-spinner" aria-hidden="true"></div>
+        <strong>{{ generating() ? 'Generando reporte...' : actionMessage() }}</strong>
+        <span>
+          {{ generating() ? 'Espera un momento mientras actualizamos el historial de reportes.' : 'Espera un momento por favor.' }}
+        </span>
+      </div>
+    </div>
+  }
 </section>

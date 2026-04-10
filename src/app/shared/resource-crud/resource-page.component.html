@@ -12,8 +12,8 @@
           [value]="searchTerm()"
           (input)="searchTerm.set($any($event.target).value)"
         />
+        <button class="btn btn-ghost" type="button" (click)="loadPage('Actualizando listado...')">Actualizar</button>
       }
-      <button class="btn btn-ghost" type="button" (click)="loadPage()">Actualizar</button>
       @if (viewMode() === 'list') {
         <button class="btn btn-primary" type="button" (click)="openCreateView()">
           Nuevo {{ config().createLabel }}
@@ -26,6 +26,10 @@
 
   @if (errorMessage()) {
     <div class="banner banner-error">{{ errorMessage() }}</div>
+  }
+
+  @if (successMessage()) {
+    <div class="banner banner-success">{{ successMessage() }}</div>
   }
 
   @if (viewMode() === 'list' && pickerTarget() && pickerFieldParam()) {
@@ -60,10 +64,15 @@
                   </div>
                 } @else if (field.type === 'textarea') {
                   <span class="field-label">{{ field.label }}</span>
-                  <textarea class="field-control textarea" [formControlName]="field.key"></textarea>
+                  <textarea
+                    class="field-control textarea"
+                    [class.field-control-readonly]="field.readonly"
+                    [formControlName]="field.key"
+                    [readOnly]="field.readonly"
+                  ></textarea>
                 } @else if (field.type === 'select') {
                   <span class="field-label">{{ field.label }}</span>
-                  @if (field.pickerOnly && field.pickerRoute) {
+                  @if (field.pickerOnly) {
                     <input
                       class="field-control field-control-readonly"
                       type="text"
@@ -82,7 +91,7 @@
                         <option [value]="option[field.lookup!.valueKey]">{{ lookupOptionLabel(field.lookup!, option) }}</option>
                       }
                     </select>
-                    @if (field.pickerRoute) {
+                    @if (field.pickerRoute || field.pickerMode === 'modal') {
                       <div class="field-picker-row">
                         <button class="btn btn-ghost" type="button" (click)="openFieldPicker(field)">
                           {{ field.pickerButtonLabel || 'Buscar en otra vista' }}
@@ -94,12 +103,14 @@
                   <span class="field-label">{{ field.label }}</span>
                   <input
                     class="field-control"
+                    [class.field-control-readonly]="field.readonly"
                     [type]="fieldInputType(field)"
                     [formControlName]="field.key"
                     [step]="field.step ?? null"
                     [min]="field.min ?? null"
                     [attr.min]="fieldMinDate(field)"
                     [attr.max]="fieldMaxDate(field)"
+                    [readOnly]="field.readonly"
                   />
                 }
                 @if (field.helpText && field.type !== 'checkbox') {
@@ -128,7 +139,7 @@
       <div class="panel-header">
         <div>
           <h2 class="panel-title">Listado</h2>
-          <p class="panel-subtitle">Registros disponibles desde `/api/{{ config().key }}`.</p>
+          <p class="panel-subtitle">Consulta y gestiona los registros disponibles.</p>
         </div>
         <span class="pill">{{ filteredItems().length }} elementos</span>
       </div>
@@ -172,5 +183,57 @@
         </div>
       }
     </article>
+  }
+
+  @if (activePickerField(); as pickerField) {
+    <div class="picker-overlay" (click)="closePickerModal()">
+      <article class="surface picker-modal" (click)="$event.stopPropagation()">
+        <div class="panel-header">
+          <div>
+            <p class="page-kicker">Seleccion asistida</p>
+            <h2 class="panel-title">Seleccionar {{ pickerField.label.toLowerCase() }}</h2>
+            <p class="panel-subtitle">Elige un registro y se aplicara inmediatamente al formulario.</p>
+          </div>
+          <button class="btn btn-secondary" type="button" (click)="closePickerModal()">Cerrar</button>
+        </div>
+
+        <div class="picker-toolbar">
+          <input
+            class="search-input"
+            type="search"
+            placeholder="Buscar..."
+            [value]="pickerSearchTerm()"
+            (input)="pickerSearchTerm.set($any($event.target).value)"
+          />
+        </div>
+
+        <div class="picker-list">
+          @for (option of filteredPickerOptions(); track $index) {
+            <button class="picker-card" type="button" (click)="selectLookupOption(option)">
+              <strong>{{ lookupOptionLabel(pickerField.lookup!, option) }}</strong>
+              @for (meta of pickerOptionMeta(option); track $index) {
+                <span>{{ meta }}</span>
+              }
+            </button>
+          }
+
+          @if (!filteredPickerOptions().length) {
+            <div class="empty-state">No hay registros que coincidan con la busqueda.</div>
+          }
+        </div>
+      </article>
+    </div>
+  }
+
+  @if (saving() || actionLoading()) {
+    <div class="saving-overlay">
+      <div class="surface saving-card">
+        <div class="saving-spinner" aria-hidden="true"></div>
+        <strong>{{ saving() ? 'Guardando cambios...' : actionMessage() }}</strong>
+        <span>
+          {{ saving() ? 'Espera un momento mientras actualizamos la información.' : 'Espera un momento por favor.' }}
+        </span>
+      </div>
+    </div>
   }
 </section>

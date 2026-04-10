@@ -14,7 +14,6 @@ export const clientesPageConfig: ResourcePageConfig = {
     { key: 'dni', label: 'DNI' },
     { key: 'telefono', label: 'Telefono' },
     { key: 'email', label: 'Correo' },
-    { key: 'fechaCreacion', label: 'Creacion', type: 'datetime' },
   ],
   fields: [
     { key: 'nombre', label: 'Nombre', type: 'text', required: true, maxLength: 100 },

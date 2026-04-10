@@ -20,6 +20,10 @@ export interface LookupConfig {
   displayWith?: (option: Record<string, unknown>) => string;
 }
 
+export interface ResourceCreateValueContext {
+  items: Record<string, unknown>[];
+}
+
 export interface ResourceColumnConfig {
   key: string;
   label: string;
@@ -44,7 +48,10 @@ export interface ResourceFieldConfig {
   maxDate?: string | 'today';
   pattern?: string;
   lookup?: LookupConfig;
+  readonly?: boolean;
+  createValue?: (context: ResourceCreateValueContext) => unknown;
   pickerOnly?: boolean;
+  pickerMode?: 'route' | 'modal';
   pickerRoute?: string;
   pickerButtonLabel?: string;
   pickerQueryParams?: Record<string, string | number | boolean>;

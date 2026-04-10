@@ -34,6 +34,8 @@ export class ReportesPageComponent {
 
   readonly loading = signal(true);
   readonly generating = signal(false);
+  readonly actionLoading = signal(false);
+  readonly actionMessage = signal('Cargando informaciÃ³n...');
   readonly errorMessage = signal<string | null>(null);
   readonly reportes = signal<ReporteDTO[]>([]);
   readonly usuarios = signal<UsuarioDTO[]>([]);
@@ -68,7 +70,11 @@ export class ReportesPageComponent {
     this.loadPage();
   }
 
-  loadPage(): void {
+  loadPage(busyMessage?: string): void {
+    if (busyMessage) {
+      this.startActionLoading(busyMessage);
+    }
+
     this.loading.set(true);
     this.errorMessage.set(null);
     forkJoin({
@@ -83,10 +89,12 @@ export class ReportesPageComponent {
         this.ventasMensuales.set(response.ventas);
         this.gananciasMensuales.set(response.ganancias);
         this.loading.set(false);
+        this.finishActionLoading();
       },
       error: (error: unknown) => {
         this.errorMessage.set(resolveApiError(error));
         this.loading.set(false);
+        this.finishActionLoading();
       },
     });
   }
@@ -153,9 +161,13 @@ export class ReportesPageComponent {
     if (!report.idReporte || !window.confirm('¿Deseas eliminar este reporte?')) {
       return;
     }
+    this.startActionLoading('Eliminando reporte...');
     this.reportesService.delete(report.idReporte).subscribe({
       next: () => this.loadPage(),
-      error: (error: unknown) => this.errorMessage.set(resolveApiError(error)),
+      error: (error: unknown) => {
+        this.errorMessage.set(resolveApiError(error));
+        this.finishActionLoading();
+      },
     });
   }
 
@@ -199,5 +211,14 @@ export class ReportesPageComponent {
   private toDisplayDate(value: string): string {
     const [year, month, day] = value.split('-');
     return `${day}/${month}/${year}`;
+  }
+
+  private startActionLoading(message: string): void {
+    this.actionMessage.set(message);
+    this.actionLoading.set(true);
+  }
+
+  private finishActionLoading(): void {
+    this.actionLoading.set(false);
   }
 }

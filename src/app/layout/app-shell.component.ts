@@ -89,7 +89,7 @@ export class AppShellComponent {
           {
             label: 'Detalle pedidos',
             route: '/detalles-pedido',
-            caption: 'Auditoría granular',
+            caption: 'Mantenimiento puntual',
             permission: 'puedeAdministrarInventario',
           },
         ],

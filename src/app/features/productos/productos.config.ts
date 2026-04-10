@@ -1,5 +1,21 @@
 import { ResourcePageConfig } from '../../shared/resource-crud/resource-page.types';
 
+function proveedorLookupLabel(option: Record<string, unknown>): string {
+  const nombre = String(option['nombre'] ?? 'Proveedor sin nombre');
+  const ruc = String(option['ruc'] ?? '').trim();
+  const telefono = String(option['telefono'] ?? '').trim();
+  const email = String(option['email'] ?? '').trim();
+
+  return [nombre, ruc || null, telefono || null, email || null].filter(Boolean).join(' · ');
+}
+
+const proveedorLookup = {
+  resource: 'proveedores' as const,
+  labelKey: 'nombre',
+  valueKey: 'idProveedor',
+  displayWith: proveedorLookupLabel,
+};
+
 export const productosPageConfig: ResourcePageConfig = {
   key: 'productos',
   idKey: 'idProducto',
@@ -9,12 +25,12 @@ export const productosPageConfig: ResourcePageConfig = {
   emptyState: 'Todavia no hay productos en catalogo.',
   searchableFields: ['nombre', 'codigoBarras', 'descripcion'],
   columns: [
-    { key: 'nombre', label: 'Producto' },
     { key: 'codigoBarras', label: 'Codigo' },
+    { key: 'nombre', label: 'Producto' },
     { key: 'precioVenta', label: 'Venta', type: 'currency' },
     { key: 'precioCompra', label: 'Compra', type: 'currency' },
     { key: 'idCategoria', label: 'Categoria', type: 'lookup', lookup: { resource: 'categorias', labelKey: 'nombre', valueKey: 'idCategoria' } },
-    { key: 'idProveedor', label: 'Proveedor', type: 'lookup', lookup: { resource: 'proveedores', labelKey: 'nombre', valueKey: 'idProveedor' } },
+    { key: 'idProveedor', label: 'Proveedor', type: 'lookup', lookup: proveedorLookup },
     { key: 'requiereReceta', label: 'Receta', type: 'boolean' },
     { key: 'fechaVencimiento', label: 'Vencimiento', type: 'date' },
   ],
@@ -43,7 +59,17 @@ export const productosPageConfig: ResourcePageConfig = {
       step: '0.01',
     },
     { key: 'idCategoria', label: 'Categoria', type: 'select', required: true, lookup: { resource: 'categorias', labelKey: 'nombre', valueKey: 'idCategoria' } },
-    { key: 'idProveedor', label: 'Proveedor', type: 'select', required: true, lookup: { resource: 'proveedores', labelKey: 'nombre', valueKey: 'idProveedor' } },
+    {
+      key: 'idProveedor',
+      label: 'Proveedor',
+      type: 'select',
+      required: true,
+      lookup: proveedorLookup,
+      pickerOnly: true,
+      pickerMode: 'modal',
+      pickerButtonLabel: 'Buscar proveedor',
+      helpText: 'Selecciona el proveedor desde una ventana asistida sin salir del formulario.',
+    },
     { key: 'requiereReceta', label: 'Requiere receta', type: 'checkbox' },
     {
       key: 'fechaVencimiento',

@@ -1,5 +1,5 @@
-import { CommonModule, CurrencyPipe } from '@angular/common';
-import { Component, computed, DestroyRef, inject, signal } from '@angular/core';
+import { CommonModule, CurrencyPipe, DOCUMENT } from '@angular/common';
+import { Component, computed, DestroyRef, inject, OnDestroy, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormArray, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -9,6 +9,7 @@ import { resolveApiError } from '../../core/services';
 import { decimalPrecisionValidator } from '../../core/validators';
 import { ClienteDTO } from '../clientes/models';
 import { ClientesService } from '../clientes/services';
+import { DetallePedidoDTO } from '../detalles-pedido/models';
 import { PedidoDTO, PedidoEstado } from './models';
 import { PedidosService } from './services';
 import { ProductoDTO } from '../productos/models';
@@ -31,13 +32,7 @@ type DetailFormGroup = FormGroup<{
   precioUnitario: FormControl<number>;
   subtotal: FormControl<number>;
 }>;
-
-interface PedidoDraftValue {
-  idCliente: number | null;
-  idUsuario: number | null;
-  estado: PedidoEstado;
-  detalles: DetailFormValue[];
-}
+type PedidoPickerType = 'cliente' | 'usuario' | 'producto';
 
 @Component({
   selector: 'app-pedidos-page',
@@ -45,18 +40,22 @@ interface PedidoDraftValue {
   templateUrl: './pedidos-page.component.html',
   styleUrl: './pedidos-page.component.css',
 })
-export class PedidosPageComponent {
+export class PedidosPageComponent implements OnDestroy {
   private readonly clientesService = inject(ClientesService);
   private readonly pedidosService = inject(PedidosService);
   private readonly productosService = inject(ProductosService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly document = inject(DOCUMENT);
   private readonly usuariosService = inject(UsuariosService);
 
   readonly loading = signal(true);
   readonly saving = signal(false);
+  readonly actionLoading = signal(false);
+  readonly actionMessage = signal('Cargando información...');
   readonly errorMessage = signal<string | null>(null);
+  readonly successMessage = signal<string | null>(null);
   readonly pedidos = signal<PedidoDTO[]>([]);
   readonly clientes = signal<ClienteDTO[]>([]);
   readonly usuarios = signal<UsuarioDTO[]>([]);
@@ -66,6 +65,11 @@ export class PedidosPageComponent {
   readonly viewMode = signal<'list' | 'form'>('list');
   readonly requestedEditId = signal<number | null>(null);
   readonly selectorMode = signal<'none' | 'boleta'>('none');
+  readonly activePicker = signal<PedidoPickerType | null>(null);
+  readonly activePickerDetailIndex = signal<number | null>(null);
+  readonly pickerSearch = signal('');
+  private pendingSuccessMessage: string | null = null;
+  private successMessageTimeoutId: number | null = null;
 
   readonly pedidoForm = new FormGroup({
     idCliente: new FormControl<number | null>(null),
@@ -78,6 +82,42 @@ export class PedidosPageComponent {
     const estado = this.estadoFiltro();
     return estado === 'todos' ? this.pedidos() : this.pedidos().filter((pedido) => pedido.estado === estado);
   });
+  readonly filteredClientes = computed(() => {
+    const term = this.pickerSearch().trim().toLowerCase();
+    if (!term) {
+      return this.clientes();
+    }
+
+    return this.clientes().filter((cliente) =>
+      [cliente.nombre, cliente.apellido, cliente.dni, cliente.email, cliente.telefono].some((value) =>
+        String(value ?? '').toLowerCase().includes(term),
+      ),
+    );
+  });
+  readonly filteredUsuarios = computed(() => {
+    const term = this.pickerSearch().trim().toLowerCase();
+    if (!term) {
+      return this.usuarios();
+    }
+
+    return this.usuarios().filter((usuario) =>
+      [usuario.nombre, usuario.apellido, usuario.email].some((value) =>
+        String(value ?? '').toLowerCase().includes(term),
+      ),
+    );
+  });
+  readonly filteredProductos = computed(() => {
+    const term = this.pickerSearch().trim().toLowerCase();
+    if (!term) {
+      return this.productos();
+    }
+
+    return this.productos().filter((producto) =>
+      [producto.nombre, producto.codigoBarras, producto.descripcion].some((value) =>
+        String(value ?? '').toLowerCase().includes(term),
+      ),
+    );
+  });
 
   constructor() {
     this.addDetail();
@@ -86,11 +126,6 @@ export class PedidosPageComponent {
       const rawEditId = params.get('editar');
       const editId = rawEditId ? Number(rawEditId) : null;
       const selector = params.get('selector');
-      const selectedClient = params.get('pedidoClienteSeleccionado');
-      const selectedUser = params.get('pedidoUsuarioSeleccionado');
-      const selectedProduct = params.get('pedidoProductoSeleccionado');
-      const selectedDetailIndex = params.get('pedidoDetalleIndex');
-      const draft = params.get('pedidoDraft');
 
       this.viewMode.set(view);
       this.requestedEditId.set(rawEditId && Number.isFinite(editId) ? editId : null);
@@ -102,17 +137,24 @@ export class PedidosPageComponent {
       }
 
       this.syncFormWithRouteState();
-      this.applyDraft(draft);
-      this.applyPickerSelections(selectedClient, selectedUser, selectedProduct, selectedDetailIndex);
     });
     this.loadPage();
+  }
+
+  ngOnDestroy(): void {
+    this.setBackgroundScrollLocked(false);
+    this.clearSuccessMessage();
   }
 
   get detailsArray(): FormArray<DetailFormGroup> {
     return this.pedidoForm.controls.detalles;
   }
 
-  loadPage(): void {
+  loadPage(busyMessage?: string): void {
+    if (busyMessage) {
+      this.startActionLoading(busyMessage);
+    }
+
     this.loading.set(true);
     this.errorMessage.set(null);
 
@@ -129,17 +171,19 @@ export class PedidosPageComponent {
         this.productos.set(response.productos);
         this.loading.set(false);
         this.syncFormWithRouteState();
-        this.applyDraft(this.route.snapshot.queryParamMap.get('pedidoDraft'));
-        this.applyPickerSelections(
-          this.route.snapshot.queryParamMap.get('pedidoClienteSeleccionado'),
-          this.route.snapshot.queryParamMap.get('pedidoUsuarioSeleccionado'),
-          this.route.snapshot.queryParamMap.get('pedidoProductoSeleccionado'),
-          this.route.snapshot.queryParamMap.get('pedidoDetalleIndex'),
-        );
+        if (this.pendingSuccessMessage) {
+          this.showSuccessMessage(this.pendingSuccessMessage);
+          this.pendingSuccessMessage = null;
+          this.saving.set(false);
+        }
+        this.finishActionLoading();
       },
       error: (error: unknown) => {
         this.errorMessage.set(resolveApiError(error));
         this.loading.set(false);
+        this.pendingSuccessMessage = null;
+        this.saving.set(false);
+        this.finishActionLoading();
       },
     });
   }
@@ -221,9 +265,12 @@ export class PedidosPageComponent {
 
     request.subscribe({
       next: () => {
+        this.pendingSuccessMessage = this.editingId()
+          ? 'Venta actualizada correctamente.'
+          : 'Venta registrada correctamente.';
+        this.errorMessage.set(null);
         this.navigateToList();
         this.loadPage();
-        this.saving.set(false);
       },
       error: (error: unknown) => {
         this.errorMessage.set(resolveApiError(error));
@@ -233,6 +280,7 @@ export class PedidosPageComponent {
   }
 
   editOrder(order: PedidoDTO): void {
+    this.startActionLoading('Cargando pedido...');
     this.router.navigate([], {
       relativeTo: this.route,
       queryParams: {
@@ -247,22 +295,31 @@ export class PedidosPageComponent {
     if (!order.idPedido || !window.confirm('¿Deseas eliminar este pedido?')) {
       return;
     }
+    this.startActionLoading('Eliminando pedido...');
     this.pedidosService.delete(order.idPedido).subscribe({
       next: () => this.loadPage(),
-      error: (error: unknown) => this.errorMessage.set(resolveApiError(error)),
+      error: (error: unknown) => {
+        this.errorMessage.set(resolveApiError(error));
+        this.finishActionLoading();
+      },
     });
   }
 
   resetForm(): void {
     this.editingId.set(null);
+    this.clearSuccessMessage();
     this.pedidoForm.reset({ idCliente: null, idUsuario: null, estado: 'pendiente', detalles: [] });
     this.detailsArray.clear();
     this.addDetail();
+    this.closePicker();
   }
 
   openCreateView(): void {
+    this.clearSuccessMessage();
+    this.startActionLoading('Abriendo formulario...');
     if (this.viewMode() === 'form' && this.requestedEditId() === null) {
       this.resetForm();
+      this.finishActionLoading();
       return;
     }
 
@@ -271,46 +328,30 @@ export class PedidosPageComponent {
       queryParams: {
         vista: 'formulario',
         editar: null,
-        pedidoClienteSeleccionado: null,
-        pedidoUsuarioSeleccionado: null,
-        pedidoProductoSeleccionado: null,
-        pedidoDetalleIndex: null,
-        pedidoDraft: null,
       },
       queryParamsHandling: 'merge',
     });
   }
 
   openClientPicker(): void {
-    this.router.navigate(['/clientes'], {
-      queryParams: {
-        pickerTarget: '/pedidos',
-        pickerFieldParam: 'pedidoClienteSeleccionado',
-        pickerReturnParams: this.pickerReturnParams(),
-      },
-    });
+    this.setBackgroundScrollLocked(true);
+    this.activePicker.set('cliente');
+    this.activePickerDetailIndex.set(null);
+    this.pickerSearch.set('');
   }
 
   openUserPicker(): void {
-    this.router.navigate(['/usuarios'], {
-      queryParams: {
-        pickerTarget: '/pedidos',
-        pickerFieldParam: 'pedidoUsuarioSeleccionado',
-        pickerReturnParams: this.pickerReturnParams(),
-      },
-    });
+    this.setBackgroundScrollLocked(true);
+    this.activePicker.set('usuario');
+    this.activePickerDetailIndex.set(null);
+    this.pickerSearch.set('');
   }
 
   openProductPicker(index: number): void {
-    this.router.navigate(['/productos'], {
-      queryParams: {
-        pickerTarget: '/pedidos',
-        pickerFieldParam: 'pedidoProductoSeleccionado',
-        pickerExtraParamName: 'pedidoDetalleIndex',
-        pickerExtraParamValue: index,
-        pickerReturnParams: this.pickerReturnParams(),
-      },
-    });
+    this.setBackgroundScrollLocked(true);
+    this.activePicker.set('producto');
+    this.activePickerDetailIndex.set(index);
+    this.pickerSearch.set('');
   }
 
   navigateToList(): void {
@@ -320,14 +361,10 @@ export class PedidosPageComponent {
         vista: null,
         editar: null,
         selector: null,
-        pedidoClienteSeleccionado: null,
-        pedidoUsuarioSeleccionado: null,
-        pedidoProductoSeleccionado: null,
-        pedidoDetalleIndex: null,
-        pedidoDraft: null,
       },
       queryParamsHandling: 'merge',
     });
+    this.closePicker();
   }
 
   clientLabel(idCliente: number | null | undefined): string {
@@ -336,14 +373,31 @@ export class PedidosPageComponent {
     return client ? `${client.nombre} ${client.apellido}` : `Cliente #${idCliente}`;
   }
 
+  orderClientLabel(order: PedidoDTO): string {
+    const summary = order.cliente;
+    const summaryName = [summary?.nombre, summary?.apellido].filter(Boolean).join(' ').trim();
+    return summaryName || this.clientLabel(order.idCliente);
+  }
+
   userLabel(idUsuario: number | null | undefined): string {
     const user = this.usuarios().find((item) => item.idUsuario === idUsuario);
     return user ? `${user.nombre} ${user.apellido}` : `Usuario #${idUsuario}`;
   }
 
+  orderUserLabel(order: PedidoDTO): string {
+    const summary = order.usuario;
+    const summaryName = [summary?.nombre, summary?.apellido].filter(Boolean).join(' ').trim();
+    return summaryName || this.userLabel(order.idUsuario);
+  }
+
   productLabel(idProducto: number | null | undefined): string {
     const product = this.productos().find((item) => item.idProducto === idProducto);
     return product ? product.nombre : `Producto #${idProducto}`;
+  }
+
+  orderDetailProductLabel(detail: DetallePedidoDTO): string {
+    const summaryName = detail.producto?.nombre?.trim();
+    return summaryName || this.productLabel(detail.idProducto);
   }
 
   selectedClientLabel(): string {
@@ -358,6 +412,37 @@ export class PedidosPageComponent {
   selectedProductLabel(index: number): string {
     const productId = this.detailsArray.at(index)?.get('idProducto')?.value as number | null | undefined;
     return productId ? this.productLabel(productId) : 'Selecciona un producto desde catalogo';
+  }
+
+  closePicker(): void {
+    this.setBackgroundScrollLocked(false);
+    this.activePicker.set(null);
+    this.activePickerDetailIndex.set(null);
+    this.pickerSearch.set('');
+  }
+
+  pickClient(client: ClienteDTO | null): void {
+    this.pedidoForm.controls.idCliente.setValue(client?.idCliente ?? null);
+    this.closePicker();
+  }
+
+  pickUser(user: UsuarioDTO): void {
+    this.pedidoForm.controls.idUsuario.setValue(user.idUsuario ?? null);
+    this.closePicker();
+  }
+
+  pickProduct(product: ProductoDTO): void {
+    const detailIndex = this.activePickerDetailIndex();
+    if (detailIndex === null) {
+      return;
+    }
+
+    while (this.detailsArray.length <= detailIndex) {
+      this.addDetail();
+    }
+
+    this.applyProductSelection(this.detailsArray.at(detailIndex), product);
+    this.closePicker();
   }
 
   stateClass(estado: PedidoEstado): string {
@@ -381,12 +466,14 @@ export class PedidosPageComponent {
 
   private syncFormWithRouteState(): void {
     if (this.viewMode() !== 'form') {
+      this.finishActionLoading();
       return;
     }
 
     const editId = this.requestedEditId();
     if (editId === null) {
       this.resetForm();
+      this.finishActionLoading();
       return;
     }
 
@@ -400,6 +487,7 @@ export class PedidosPageComponent {
     }
 
     this.populateOrder(order);
+    this.finishActionLoading();
   }
 
   private populateOrder(order: PedidoDTO): void {
@@ -426,106 +514,6 @@ export class PedidosPageComponent {
     this.addDetail();
   }
 
-  private applyPickerSelections(
-    selectedClient: string | null,
-    selectedUser: string | null,
-    selectedProduct: string | null,
-    selectedDetailIndex: string | null,
-  ): void {
-    if (this.viewMode() !== 'form') {
-      return;
-    }
-
-    if (selectedClient !== null) {
-      const clientId = Number(selectedClient);
-      if (Number.isFinite(clientId)) {
-        this.pedidoForm.controls.idCliente.setValue(clientId);
-      }
-    }
-
-    if (selectedUser !== null) {
-      const userId = Number(selectedUser);
-      if (Number.isFinite(userId)) {
-        this.pedidoForm.controls.idUsuario.setValue(userId);
-      }
-    }
-
-    if (selectedProduct !== null) {
-      const productId = Number(selectedProduct);
-      const detailIndex = Number(selectedDetailIndex ?? 0);
-      if (Number.isFinite(productId) && Number.isFinite(detailIndex)) {
-        while (this.detailsArray.length <= detailIndex) {
-          this.addDetail();
-        }
-        const detailGroup = this.detailsArray.at(detailIndex);
-        const product = this.productos().find((item) => item.idProducto === productId);
-        detailGroup.get('idProducto')?.setValue(productId);
-        if (product) {
-          this.applyProductSelection(detailGroup, product);
-        }
-      }
-    }
-  }
-
-  private pickerReturnParams(): string {
-    return JSON.stringify({
-      vista: 'formulario',
-      editar: this.editingId(),
-      pedidoDraft: this.serializeDraft(),
-    });
-  }
-
-  private serializeDraft(): string {
-    const draft: PedidoDraftValue = {
-      idCliente: this.pedidoForm.controls.idCliente.value,
-      idUsuario: this.pedidoForm.controls.idUsuario.value,
-      estado: this.pedidoForm.controls.estado.value,
-      detalles: this.detailsArray.controls.map((group) => ({
-        idDetalle: (group.get('idDetalle')?.value as number | null) ?? null,
-        idProducto: (group.get('idProducto')?.value as number | null) ?? null,
-        cantidad: Number(group.get('cantidad')?.value ?? 1),
-        precioUnitario: Number(group.get('precioUnitario')?.value ?? 0),
-        subtotal: Number(group.get('subtotal')?.value ?? 0),
-      })),
-    };
-
-    return JSON.stringify(draft);
-  }
-
-  private applyDraft(serializedDraft: string | null): void {
-    if (!serializedDraft || this.viewMode() !== 'form') {
-      return;
-    }
-
-    try {
-      const draft = JSON.parse(serializedDraft) as Partial<PedidoDraftValue>;
-      this.pedidoForm.patchValue({
-        idCliente: draft.idCliente ?? null,
-        idUsuario: draft.idUsuario ?? null,
-        estado: draft.estado ?? 'pendiente',
-      });
-
-      this.detailsArray.clear();
-      const details = Array.isArray(draft.detalles) ? draft.detalles : [];
-      if (!details.length) {
-        this.addDetail();
-        return;
-      }
-
-      for (const detail of details) {
-        this.addDetail({
-          idDetalle: detail.idDetalle ?? null,
-          idProducto: detail.idProducto ?? null,
-          cantidad: Number(detail.cantidad ?? 1),
-          precioUnitario: Number(detail.precioUnitario ?? 0),
-          subtotal: Number(detail.subtotal ?? 0),
-        });
-      }
-    } catch {
-      // Ignore malformed draft params and continue with the active form state.
-    }
-  }
-
   private syncDetailSubtotal(detailGroup: DetailFormGroup): void {
     const updateSubtotal = () => {
       const quantity = Number(detailGroup.controls.cantidad.value ?? 0);
@@ -544,5 +532,37 @@ export class PedidosPageComponent {
     detailGroup.controls.precioUnitario.setValue(Number(product.precioVenta ?? 0));
     detailGroup.controls.precioUnitario.markAsDirty();
     detailGroup.controls.precioUnitario.markAsTouched();
+  }
+
+  private setBackgroundScrollLocked(locked: boolean): void {
+    const value = locked ? 'hidden' : '';
+    this.document.body.style.overflow = value;
+    this.document.documentElement.style.overflow = value;
+  }
+
+  private startActionLoading(message: string): void {
+    this.actionMessage.set(message);
+    this.actionLoading.set(true);
+  }
+
+  private finishActionLoading(): void {
+    this.actionLoading.set(false);
+  }
+
+  private showSuccessMessage(message: string): void {
+    this.clearSuccessMessage();
+    this.successMessage.set(message);
+    this.successMessageTimeoutId = window.setTimeout(() => {
+      this.successMessage.set(null);
+      this.successMessageTimeoutId = null;
+    }, 3500);
+  }
+
+  private clearSuccessMessage(): void {
+    if (this.successMessageTimeoutId !== null) {
+      window.clearTimeout(this.successMessageTimeoutId);
+      this.successMessageTimeoutId = null;
+    }
+    this.successMessage.set(null);
   }
 }

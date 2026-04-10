@@ -1,23 +1,88 @@
 import { ResourcePageConfig } from '../../shared/resource-crud/resource-page.types';
 
+function pedidoLookupLabel(option: Record<string, unknown>): string {
+  const idPedido = option['idPedido'] ?? '-';
+  const fechaPedido = String(option['fechaPedido'] ?? 'Sin fecha');
+  const estado = String(option['estado'] ?? 'sin estado');
+  const total = Number(option['total'] ?? 0);
+  const cliente = option['cliente'] as Record<string, unknown> | undefined;
+  const clienteNombre = [cliente?.['nombre'], cliente?.['apellido']].filter(Boolean).join(' ').trim();
+  const totalLabel = new Intl.NumberFormat('es-PE', {
+    style: 'currency',
+    currency: 'PEN',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(total);
+
+  return [`Pedido #${idPedido}`, clienteNombre || null, fechaPedido, estado, totalLabel].filter(Boolean).join(' · ');
+}
+
+function productoLookupLabel(option: Record<string, unknown>): string {
+  const nombre = String(option['nombre'] ?? 'Producto sin nombre');
+  const codigoBarras = String(option['codigoBarras'] ?? '').trim();
+  const precioVenta = Number(option['precioVenta'] ?? 0);
+  const precioLabel = new Intl.NumberFormat('es-PE', {
+    style: 'currency',
+    currency: 'PEN',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(precioVenta);
+
+  return [nombre, codigoBarras || null, precioLabel].filter(Boolean).join(' · ');
+}
+
+const pedidoLookup = {
+  resource: 'pedidos' as const,
+  labelKey: 'idPedido',
+  valueKey: 'idPedido',
+  displayWith: pedidoLookupLabel,
+};
+
+const productoLookup = {
+  resource: 'productos' as const,
+  labelKey: 'nombre',
+  valueKey: 'idProducto',
+  displayWith: productoLookupLabel,
+};
+
 export const detallesPedidoPageConfig: ResourcePageConfig = {
   key: 'detalles-pedido',
   idKey: 'idDetalle',
-  title: 'Detalles de pedido',
-  description: 'Modulo tecnico para auditar o ajustar items individuales vinculados a pedidos.',
-  createLabel: 'detalle',
-  emptyState: 'Todavia no hay detalles de pedidos.',
+  title: 'Mantenimiento de detalles',
+  description: 'Modulo tecnico para ajustes puntuales. El flujo principal de venta vive en Pedidos.',
+  createLabel: 'ajuste puntual',
+  emptyState: 'Todavia no hay ajustes de detalles registrados.',
   searchableFields: ['idPedido', 'idProducto'],
   columns: [
-    { key: 'idPedido', label: 'Pedido', type: 'lookup', lookup: { resource: 'pedidos', labelKey: 'idPedido', valueKey: 'idPedido' } },
-    { key: 'idProducto', label: 'Producto', type: 'lookup', lookup: { resource: 'productos', labelKey: 'nombre', valueKey: 'idProducto' } },
+    { key: 'idPedido', label: 'Pedido', type: 'lookup', lookup: pedidoLookup },
+    { key: 'idProducto', label: 'Producto', type: 'lookup', lookup: productoLookup },
     { key: 'cantidad', label: 'Cantidad' },
     { key: 'precioUnitario', label: 'Precio', type: 'currency' },
     { key: 'subtotal', label: 'Subtotal', type: 'currency' },
   ],
   fields: [
-    { key: 'idPedido', label: 'Pedido', type: 'select', required: true, lookup: { resource: 'pedidos', labelKey: 'idPedido', valueKey: 'idPedido' } },
-    { key: 'idProducto', label: 'Producto', type: 'select', required: true, lookup: { resource: 'productos', labelKey: 'nombre', valueKey: 'idProducto' } },
+    {
+      key: 'idPedido',
+      label: 'Pedido',
+      type: 'select',
+      required: true,
+      lookup: pedidoLookup,
+      pickerOnly: true,
+      pickerMode: 'modal',
+      pickerButtonLabel: 'Buscar pedido',
+      helpText: 'Selecciona el pedido desde una ventana asistida sin salir del formulario.',
+    },
+    {
+      key: 'idProducto',
+      label: 'Producto',
+      type: 'select',
+      required: true,
+      lookup: productoLookup,
+      pickerOnly: true,
+      pickerMode: 'modal',
+      pickerButtonLabel: 'Buscar producto',
+      helpText: 'Selecciona el producto desde una ventana asistida sin salir del formulario.',
+    },
     { key: 'cantidad', label: 'Cantidad', type: 'number', required: true, min: 1 },
     {
       key: 'precioUnitario',

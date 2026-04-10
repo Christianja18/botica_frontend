@@ -1,10 +1,26 @@
-import { ResourcePageConfig } from '../../shared/resource-crud/resource-page.types';
+import { ResourceCreateValueContext, ResourcePageConfig } from '../../shared/resource-crud/resource-page.types';
+
+function nextBoletaNumber({ items }: ResourceCreateValueContext): string {
+  const lastNumber = items.reduce((max, item) => {
+    const current = String(item['numeroBoleta'] ?? '').trim();
+    const match = current.match(/^B001-(\d{1,6})$/i);
+    if (!match) {
+      return max;
+    }
+
+    return Math.max(max, Number(match[1] ?? 0));
+  }, 0);
+
+  return `B001-${String(lastNumber + 1).padStart(6, '0')}`;
+}
 
 function pedidoLookupLabel(option: Record<string, unknown>): string {
   const idPedido = option['idPedido'] ?? '-';
   const fechaPedido = String(option['fechaPedido'] ?? 'Sin fecha');
   const estado = String(option['estado'] ?? 'sin estado');
   const total = Number(option['total'] ?? 0);
+  const cliente = option['cliente'] as Record<string, unknown> | undefined;
+  const clienteNombre = [cliente?.['nombre'], cliente?.['apellido']].filter(Boolean).join(' ').trim();
   const totalLabel = new Intl.NumberFormat('es-PE', {
     style: 'currency',
     currency: 'PEN',
@@ -12,7 +28,7 @@ function pedidoLookupLabel(option: Record<string, unknown>): string {
     maximumFractionDigits: 2,
   }).format(total);
 
-  return `Pedido #${idPedido} · ${fechaPedido} · ${estado} · ${totalLabel}`;
+  return [`Pedido #${idPedido}`, clienteNombre || null, fechaPedido, estado, totalLabel].filter(Boolean).join(' · ');
 }
 
 const pedidoLookup = {
@@ -40,7 +56,16 @@ export const boletasPageConfig: ResourcePageConfig = {
     { key: 'fechaEmision', label: 'Emision', type: 'datetime' },
   ],
   fields: [
-    { key: 'numeroBoleta', label: 'Numero de boleta', type: 'text', required: true, maxLength: 20 },
+    {
+      key: 'numeroBoleta',
+      label: 'Numero de boleta',
+      type: 'text',
+      required: true,
+      maxLength: 20,
+      readonly: true,
+      createValue: nextBoletaNumber,
+      helpText: 'Se genera automaticamente tomando el ultimo correlativo registrado.',
+    },
     {
       key: 'idPedido',
       label: 'Pedido',
@@ -48,11 +73,10 @@ export const boletasPageConfig: ResourcePageConfig = {
       required: true,
       lookup: pedidoLookup,
       pickerOnly: true,
-      pickerRoute: '/pedidos',
-      pickerButtonLabel: 'Buscar pedido en historial',
-      pickerQueryParams: { selector: 'boleta' },
+      pickerMode: 'modal',
+      pickerButtonLabel: 'Buscar pedido',
       selectionQueryParam: 'pedidoSeleccionado',
-      helpText: 'Selecciona el pedido o abre el historial para elegir uno y volver con la boleta preparada.',
+      helpText: 'Selecciona el pedido desde una ventana asistida sin salir del formulario.',
     },
     { key: 'total', label: 'Total', type: 'currency', hiddenInForm: true },
     { key: 'igv', label: 'IGV', type: 'currency', min: 0, integerDigits: 8, fractionDigits: 2, step: '0.01' },
