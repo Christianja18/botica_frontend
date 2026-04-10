@@ -29,6 +29,13 @@ export const inventarioPageConfig: ResourcePageConfig = {
   createLabel: 'registro de inventario',
   emptyState: 'Todavia no hay registros de inventario.',
   searchableFields: ['idProducto', 'stockActual', 'stockMinimo'],
+  pagination: {
+    enabled: true,
+    pageSize: 5,
+    pageSizeOptions: [5, 10, 15, 20, 50],
+    sortBy: 'idInventario',
+    direction: 'asc',
+  },
   columns: [
     { key: 'idProducto', label: 'Producto', type: 'lookup', lookup: productoLookup },
     { key: 'stockActual', label: 'Stock actual' },

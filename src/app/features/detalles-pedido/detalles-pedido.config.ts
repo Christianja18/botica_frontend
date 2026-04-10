@@ -53,6 +53,13 @@ export const detallesPedidoPageConfig: ResourcePageConfig = {
   createLabel: 'ajuste puntual',
   emptyState: 'Todavia no hay ajustes de detalles registrados.',
   searchableFields: ['idPedido', 'idProducto'],
+  pagination: {
+    enabled: true,
+    pageSize: 5,
+    pageSizeOptions: [5, 10, 15, 20, 50],
+    sortBy: 'idDetalle',
+    direction: 'desc',
+  },
   columns: [
     { key: 'idPedido', label: 'Pedido', type: 'lookup', lookup: pedidoLookup },
     { key: 'idProducto', label: 'Producto', type: 'lookup', lookup: productoLookup },

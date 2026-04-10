@@ -143,7 +143,7 @@
           <h2 class="panel-title">Listado</h2>
           <p class="panel-subtitle">Consulta y gestiona los registros disponibles.</p>
         </div>
-        <span class="pill">{{ filteredItems().length }} elementos</span>
+        <span class="pill">{{ listCountLabel() }}</span>
       </div>
 
       @if (loading()) {
@@ -183,6 +183,43 @@
             </tbody>
           </table>
         </div>
+
+        @if (showPagination()) {
+          <div class="pagination-bar">
+            <div class="pagination-info">
+              <strong>Pagina {{ currentPage() + 1 }} de {{ totalPages() }}</strong>
+              <span>{{ pageRangeLabel() }}</span>
+            </div>
+
+            <div class="pagination-controls">
+              <label class="pagination-size">
+                <span>Mostrar</span>
+                <select
+                  class="field-control pagination-select"
+                  [ngModel]="pageSize()"
+                  [ngModelOptions]="{ standalone: true }"
+                  (ngModelChange)="changePageSize($event)"
+                >
+                  @for (size of pageSizeOptions(); track size) {
+                    <option [ngValue]="size">{{ size }}</option>
+                  }
+                </select>
+              </label>
+
+              <button class="btn btn-secondary" type="button" [disabled]="currentPage() === 0" (click)="previousPage()">
+                Anterior
+              </button>
+              <button
+                class="btn btn-secondary"
+                type="button"
+                [disabled]="currentPage() + 1 >= totalPages()"
+                (click)="nextPage()"
+              >
+                Siguiente
+              </button>
+            </div>
+          </div>
+        }
       }
     </article>
   }

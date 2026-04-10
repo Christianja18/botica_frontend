@@ -24,6 +24,13 @@ export const productosPageConfig: ResourcePageConfig = {
   createLabel: 'producto',
   emptyState: 'Todavia no hay productos en catalogo.',
   searchableFields: ['nombre', 'codigoBarras', 'descripcion'],
+  pagination: {
+    enabled: true,
+    pageSize: 5,
+    pageSizeOptions: [5, 10, 15, 20, 50],
+    sortBy: 'idProducto',
+    direction: 'asc',
+  },
   columns: [
     { key: 'codigoBarras', label: 'Codigo' },
     { key: 'nombre', label: 'Producto' },

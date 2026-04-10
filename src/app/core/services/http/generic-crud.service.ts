@@ -1,5 +1,7 @@
+import { HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
+import { PageQueryParams, PageResponse } from '../../models';
 import { BaseApiService } from './base-api.service';
 
 export abstract class GenericCrudService<TItem, TPayload = TItem> extends BaseApiService {
@@ -9,6 +11,16 @@ export abstract class GenericCrudService<TItem, TPayload = TItem> extends BaseAp
 
   list(): Observable<TItem[]> {
     return this.get<TItem[]>(this.resourcePath);
+  }
+
+  listPage(query: PageQueryParams, paginatedPath = 'paginado'): Observable<PageResponse<TItem>> {
+    const params = new HttpParams()
+      .set('page', query.page)
+      .set('size', query.size)
+      .set('sortBy', query.sortBy ?? 'id')
+      .set('direction', query.direction ?? 'asc');
+
+    return this.get<PageResponse<TItem>>(`${this.resourcePath}/${paginatedPath}`, { params });
   }
 
   getById(id: number): Observable<TItem> {

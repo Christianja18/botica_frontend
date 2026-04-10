@@ -8,6 +8,13 @@ export const clientesPageConfig: ResourcePageConfig = {
   createLabel: 'cliente',
   emptyState: 'Todavia no hay clientes creados.',
   searchableFields: ['nombre', 'apellido', 'dni', 'telefono', 'email'],
+  pagination: {
+    enabled: true,
+    pageSize: 5,
+    pageSizeOptions: [5, 10, 15, 20, 50],
+    sortBy: 'idCliente',
+    direction: 'asc',
+  },
   columns: [
     { key: 'nombre', label: 'Nombre' },
     { key: 'apellido', label: 'Apellido' },

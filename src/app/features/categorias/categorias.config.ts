@@ -8,6 +8,13 @@ export const categoriasPageConfig: ResourcePageConfig = {
   createLabel: 'categoria',
   emptyState: 'Todavia no hay categorias creadas.',
   searchableFields: ['nombre', 'descripcion'],
+  pagination: {
+    enabled: true,
+    pageSize: 5,
+    pageSizeOptions: [5, 10, 15, 20, 50],
+    sortBy: 'idCategoria',
+    direction: 'asc',
+  },
   columns: [
     { key: 'nombre', label: 'Nombre' },
     { key: 'descripcion', label: 'Descripcion' },

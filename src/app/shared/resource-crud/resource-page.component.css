@@ -87,6 +87,47 @@
   color: rgba(71, 85, 105, 0.92);
 }
 
+.pagination-bar {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+  margin-top: 1.1rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(148, 163, 184, 0.18);
+}
+
+.pagination-info {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.pagination-info span {
+  color: rgba(71, 85, 105, 0.92);
+}
+
+.pagination-controls {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.pagination-size {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+  color: rgba(30, 41, 59, 0.92);
+  font-weight: 600;
+}
+
+.pagination-select {
+  min-width: 5.5rem;
+  padding-top: 0.65rem;
+  padding-bottom: 0.65rem;
+}
+
 .saving-overlay {
   position: fixed;
   inset: 0;
@@ -134,5 +175,19 @@
 
   .picker-overlay {
     padding: 0.75rem;
+  }
+
+  .pagination-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .pagination-controls {
+    justify-content: stretch;
+  }
+
+  .pagination-controls .btn,
+  .pagination-size {
+    width: 100%;
   }
 }

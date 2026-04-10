@@ -1,9 +1,9 @@
 import { CommonModule, DOCUMENT } from '@angular/common';
 import { Component, computed, DestroyRef, effect, inject, Injector, input, OnDestroy, OnInit, output, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { FormControl, FormGroup, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, ParamMap, Router } from '@angular/router';
-import { forkJoin, Observable, of } from 'rxjs';
+import { forkJoin, map, Observable, of } from 'rxjs';
 
 import { CrudResourceKey } from '../../core/models';
 import { BoticaApiService, resolveApiError } from '../../core/services';
@@ -27,7 +27,7 @@ import {
 
 @Component({
   selector: 'app-resource-page',
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule],
   templateUrl: './resource-page.component.html',
   styleUrl: './resource-page.component.css',
 })
@@ -62,6 +62,10 @@ export class ResourcePageComponent implements OnInit, OnDestroy {
   readonly pickerSearchTerm = signal('');
   readonly items = signal<Record<string, unknown>[]>([]);
   readonly lookupOptions = signal<Record<string, Record<string, unknown>[]>>({});
+  readonly currentPage = signal(0);
+  readonly pageSize = signal(5);
+  readonly totalPages = signal(1);
+  readonly totalElements = signal(0);
   readonly defaultValues: Record<string, unknown> = {};
   readonly form = new FormGroup<Record<string, FormControl<unknown>>>({});
   readonly requestedEditId = signal<number | null>(null);
@@ -103,8 +107,36 @@ export class ResourcePageComponent implements OnInit, OnDestroy {
     });
   });
 
+  readonly paginationEnabled = computed(
+    () => Boolean(this.config().pagination?.enabled && this.resourceService().listPage),
+  );
+
+  readonly pageSizeOptions = computed(() => {
+    const configured = this.config().pagination?.pageSizeOptions ?? [];
+    const activeSize = this.pageSize();
+    const options = configured.length ? configured : [activeSize];
+    return Array.from(new Set([...options, activeSize])).sort((left, right) => left - right);
+  });
+
+  readonly showPagination = computed(() => this.paginationEnabled() && !this.loading());
+
+  readonly listCountLabel = computed(() =>
+    this.paginationEnabled() ? `${this.totalElements()} registros` : `${this.filteredItems().length} elementos`,
+  );
+
+  readonly pageRangeLabel = computed(() => {
+    if (!this.totalElements()) {
+      return 'Sin registros';
+    }
+
+    const start = this.currentPage() * this.pageSize() + 1;
+    const end = Math.min(this.currentPage() * this.pageSize() + this.items().length, this.totalElements());
+    return `Mostrando ${start}-${end} de ${this.totalElements()} registros`;
+  });
+
   ngOnInit(): void {
     this.buildForm();
+    this.restorePaginationState();
     this.handledRefreshVersion = this.refreshVersion();
 
     effect(
@@ -117,7 +149,7 @@ export class ResourcePageComponent implements OnInit, OnDestroy {
         this.handledRefreshVersion = version;
         this.loadPage('Actualizando listado...');
       },
-      { injector: this.injector, allowSignalWrites: true },
+      { injector: this.injector },
     );
 
     this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
@@ -159,12 +191,17 @@ export class ResourcePageComponent implements OnInit, OnDestroy {
     this.errorMessage.set(null);
 
     forkJoin({
-      items: this.resourceService().list() as Observable<Record<string, unknown>[]>,
+      itemsPage: this.loadItemsPage(),
       lookups: this.loadLookups(),
     }).subscribe({
-      next: ({ items, lookups }) => {
-        this.items.set(items);
+      next: ({ itemsPage, lookups }) => {
+        this.items.set(itemsPage.content);
         this.lookupOptions.set(lookups);
+        this.totalElements.set(itemsPage.totalElements);
+        this.totalPages.set(Math.max(itemsPage.totalPages, 1));
+        this.currentPage.set(itemsPage.page);
+        this.pageSize.set(itemsPage.size);
+        this.persistPaginationState();
         this.loading.set(false);
         this.syncFormWithRouteState();
         this.applySelectionQueryParams(this.route.snapshot.queryParamMap);
@@ -237,7 +274,12 @@ export class ResourcePageComponent implements OnInit, OnDestroy {
 
     this.startActionLoading('Eliminando registro...');
     this.resourceService().delete(id).subscribe({
-      next: () => this.loadPage(),
+      next: () => {
+        if (this.paginationEnabled() && this.items().length === 1 && this.currentPage() > 0) {
+          this.currentPage.update((page) => Math.max(page - 1, 0));
+        }
+        this.loadPage();
+      },
       error: (error: unknown) => {
         this.errorMessage.set(resolveApiError(error));
         this.finishActionLoading();
@@ -388,6 +430,41 @@ export class ResourcePageComponent implements OnInit, OnDestroy {
     this.setBackgroundScrollLocked(false);
     this.activePickerField.set(null);
     this.pickerSearchTerm.set('');
+  }
+
+  previousPage(): void {
+    this.goToPage(this.currentPage() - 1);
+  }
+
+  nextPage(): void {
+    this.goToPage(this.currentPage() + 1);
+  }
+
+  goToPage(page: number): void {
+    if (!this.paginationEnabled()) {
+      return;
+    }
+
+    const targetPage = Math.max(0, Math.min(page, this.totalPages() - 1));
+    if (targetPage === this.currentPage()) {
+      return;
+    }
+
+    this.currentPage.set(targetPage);
+    this.persistPaginationState();
+    this.loadPage('Cargando pagina...');
+  }
+
+  changePageSize(value: string | number): void {
+    const numericValue = Number(value);
+    if (!Number.isFinite(numericValue) || numericValue <= 0 || numericValue === this.pageSize()) {
+      return;
+    }
+
+    this.pageSize.set(numericValue);
+    this.currentPage.set(0);
+    this.persistPaginationState();
+    this.loadPage('Actualizando paginacion...');
   }
 
   selectLookupOption(option: Record<string, unknown>): void {
@@ -549,6 +626,96 @@ export class ResourcePageComponent implements OnInit, OnDestroy {
         ]),
       ),
     );
+  }
+
+  private loadItemsPage(): Observable<{
+    content: Record<string, unknown>[];
+    page: number;
+    size: number;
+    totalElements: number;
+    totalPages: number;
+  }> {
+    if (this.paginationEnabled()) {
+      return (this.resourceService().listPage!({
+        page: this.currentPage(),
+        size: this.pageSize(),
+        sortBy: this.config().pagination?.sortBy,
+        direction: this.config().pagination?.direction,
+      }) as Observable<{
+        content: Record<string, unknown>[];
+        page: number;
+        size: number;
+        totalElements: number;
+        totalPages: number;
+      }>).pipe(
+        map((response) => ({
+          content: response.content,
+          page: response.page,
+          size: response.size,
+          totalElements: response.totalElements,
+          totalPages: response.totalPages,
+        })),
+      );
+    }
+
+    return (this.resourceService().list() as Observable<Record<string, unknown>[]>).pipe(
+      map((items) => ({
+        content: items,
+        page: 0,
+        size: items.length || this.pageSize(),
+        totalElements: items.length,
+        totalPages: 1,
+      })),
+    );
+  }
+
+  private restorePaginationState(): void {
+    const defaultSize = this.config().pagination?.pageSize ?? 5;
+    this.pageSize.set(defaultSize);
+    this.currentPage.set(0);
+
+    if (!this.paginationEnabled()) {
+      return;
+    }
+
+    const rawState = this.document.defaultView?.sessionStorage?.getItem(this.paginationStateKey());
+    if (!rawState) {
+      return;
+    }
+
+    try {
+      const parsed = JSON.parse(rawState) as { page?: unknown; size?: unknown };
+      const storedPage = Number(parsed.page);
+      const storedSize = Number(parsed.size);
+
+      if (Number.isFinite(storedPage) && storedPage >= 0) {
+        this.currentPage.set(storedPage);
+      }
+
+      if (Number.isFinite(storedSize) && storedSize > 0) {
+        this.pageSize.set(storedSize);
+      }
+    } catch {
+      this.document.defaultView?.sessionStorage?.removeItem(this.paginationStateKey());
+    }
+  }
+
+  private persistPaginationState(): void {
+    if (!this.paginationEnabled()) {
+      return;
+    }
+
+    this.document.defaultView?.sessionStorage?.setItem(
+      this.paginationStateKey(),
+      JSON.stringify({
+        page: this.currentPage(),
+        size: this.pageSize(),
+      }),
+    );
+  }
+
+  private paginationStateKey(): string {
+    return `resource-pagination:${this.config().key}`;
   }
 
   private toIsoDate(value: Date): string {

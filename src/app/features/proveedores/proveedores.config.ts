@@ -8,6 +8,13 @@ export const proveedoresPageConfig: ResourcePageConfig = {
   createLabel: 'proveedor',
   emptyState: 'Todavia no hay proveedores cargados.',
   searchableFields: ['nombre', 'ruc', 'telefono', 'email', 'direccion'],
+  pagination: {
+    enabled: true,
+    pageSize: 5,
+    pageSizeOptions: [5, 10, 15, 20, 50],
+    sortBy: 'idProveedor',
+    direction: 'asc',
+  },
   columns: [
     { key: 'nombre', label: 'Proveedor' },
     { key: 'ruc', label: 'RUC' },

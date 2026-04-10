@@ -46,6 +46,13 @@ export const boletasPageConfig: ResourcePageConfig = {
   createLabel: 'boleta',
   emptyState: 'Todavia no hay boletas registradas.',
   searchableFields: ['numeroBoleta', 'idPedido', 'datosCliente', 'datosEmpleado'],
+  pagination: {
+    enabled: true,
+    pageSize: 5,
+    pageSizeOptions: [5, 10, 15, 20, 50],
+    sortBy: 'idBoleta',
+    direction: 'desc',
+  },
   columns: [
     { key: 'numeroBoleta', label: 'Numero' },
     { key: 'idPedido', label: 'Pedido', type: 'lookup', lookup: pedidoLookup },

@@ -8,6 +8,13 @@ export const usuariosPageConfig: ResourcePageConfig = {
   createLabel: 'usuario',
   emptyState: 'Todavia no hay usuarios registrados.',
   searchableFields: ['nombre', 'apellido', 'email'],
+  pagination: {
+    enabled: true,
+    pageSize: 5,
+    pageSizeOptions: [5, 10, 15, 20, 50],
+    sortBy: 'idUsuario',
+    direction: 'asc',
+  },
   columns: [
     { key: 'nombre', label: 'Nombre' },
     { key: 'apellido', label: 'Apellido' },

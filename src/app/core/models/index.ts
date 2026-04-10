@@ -1,4 +1,5 @@
 export * from './auth/auth.models';
+export * from './shared/pagination.models';
 export * from './shared/permissions.models';
 export * from '../../features/roles/models';
 export * from '../../features/usuarios/models';

@@ -1,6 +1,6 @@
 import { Observable } from 'rxjs';
 
-import { CrudResourceKey } from '../../core/models';
+import { CrudResourceKey, PageQueryParams, PageResponse } from '../../core/models';
 
 export type ResourceFieldType =
   | 'text'
@@ -70,10 +70,18 @@ export interface ResourcePageConfig {
   searchableFields: string[];
   columns: ResourceColumnConfig[];
   fields: ResourceFieldConfig[];
+  pagination?: {
+    enabled: boolean;
+    pageSize?: number;
+    pageSizeOptions?: number[];
+    sortBy?: string;
+    direction?: 'asc' | 'desc';
+  };
 }
 
 export interface CrudPageService<TItem = unknown, TPayload = unknown> {
   list(): Observable<TItem[]>;
+  listPage?(query: PageQueryParams): Observable<PageResponse<TItem>>;
   create(payload: TPayload): Observable<TItem>;
   update(id: number, payload: TPayload): Observable<TItem>;
   delete(id: number): Observable<void>;
