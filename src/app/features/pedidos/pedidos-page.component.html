@@ -39,6 +39,28 @@
         </div>
       </div>
 
+      @if (completedOrderEditNotice().length) {
+        <div class="banner banner-warning">
+          <strong>Atencion al editar un pedido completado</strong>
+          <div class="banner-warning-list">
+            @for (notice of completedOrderEditNotice(); track notice) {
+              <span>{{ notice }}</span>
+            }
+          </div>
+        </div>
+      }
+
+      @if (pedidoForm.controls.estado.value === 'completado' && orderBusinessWarnings().length) {
+        <div class="banner banner-warning banner-warning-strong">
+          <strong>Antes de completar el pedido revisa lo siguiente:</strong>
+          <div class="banner-warning-list">
+            @for (warning of orderBusinessWarnings(); track warning) {
+              <span>{{ warning }}</span>
+            }
+          </div>
+        </div>
+      }
+
       <form [formGroup]="pedidoForm" (ngSubmit)="saveOrder()">
         <div class="form-grid">
           <label class="field">
@@ -106,6 +128,9 @@
                   </div>
                 </div>
               </div>
+              @if (detailBusinessWarning($index); as detailWarning) {
+                <p class="field-warning">{{ detailWarning }}</p>
+              }
               <div class="form-actions">
                 <button class="btn btn-secondary" type="button" (click)="removeDetail($index)">Quitar item</button>
               </div>
@@ -121,7 +146,11 @@
         </div>
 
         <div class="form-actions">
-          <button class="btn btn-primary" type="submit" [disabled]="saving()">
+          <button
+            class="btn btn-primary"
+            type="submit"
+            [disabled]="saving() || (pedidoForm.controls.estado.value === 'completado' && orderBusinessWarnings().length > 0)"
+          >
             {{ saving() ? 'Guardando...' : editingId() ? 'Actualizar venta' : 'Guardar venta' }}
           </button>
           <button class="btn btn-secondary" type="button" (click)="resetForm()">
@@ -258,6 +287,22 @@
                 <span>{{ producto.codigoBarras }}</span>
                 <span>{{ producto.precioVenta | currency: 'PEN':'symbol':'1.2-2' }}</span>
                 <span>{{ producto.descripcion || 'Sin descripcion' }}</span>
+                <span class="picker-stock-note">{{ productPickerStockNote(producto) }}</span>
+                @if (productPickerBadges(producto).length) {
+                  <div class="picker-badges">
+                    @for (badge of productPickerBadges(producto); track badge) {
+                      <span
+                        class="picker-badge"
+                        [class.expired]="badge === 'Vencido'"
+                        [class.expiring]="badge === 'Por vencer'"
+                        [class.low-stock]="badge === 'Stock bajo'"
+                        [class.insufficient]="badge === 'Stock insuficiente'"
+                      >
+                        {{ badge }}
+                      </span>
+                    }
+                  </div>
+                }
               </button>
             }
             @if (!filteredProductos().length) {

@@ -5,11 +5,13 @@ import { FormArray, FormControl, FormGroup, ReactiveFormsModule, Validators } fr
 import { ActivatedRoute, Router } from '@angular/router';
 import { forkJoin } from 'rxjs';
 
-import { resolveApiError } from '../../core/services';
+import { resolveApiError, StockRefreshService } from '../../core/services';
 import { decimalPrecisionValidator } from '../../core/validators';
 import { ClienteDTO } from '../clientes/models';
 import { ClientesService } from '../clientes/services';
 import { DetallePedidoDTO } from '../detalles-pedido/models';
+import { InventarioDTO } from '../inventario/models';
+import { InventarioService } from '../inventario/services';
 import { PedidoDTO, PedidoEstado } from './models';
 import { PedidosService } from './services';
 import { ProductoDTO } from '../productos/models';
@@ -42,10 +44,12 @@ type PedidoPickerType = 'cliente' | 'usuario' | 'producto';
 })
 export class PedidosPageComponent implements OnDestroy {
   private readonly clientesService = inject(ClientesService);
+  private readonly inventarioService = inject(InventarioService);
   private readonly pedidosService = inject(PedidosService);
   private readonly productosService = inject(ProductosService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly stockRefresh = inject(StockRefreshService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly document = inject(DOCUMENT);
   private readonly usuariosService = inject(UsuariosService);
@@ -58,6 +62,8 @@ export class PedidosPageComponent implements OnDestroy {
   readonly successMessage = signal<string | null>(null);
   readonly pedidos = signal<PedidoDTO[]>([]);
   readonly clientes = signal<ClienteDTO[]>([]);
+  readonly inventario = signal<InventarioDTO[]>([]);
+  readonly originalOrder = signal<PedidoDTO | null>(null);
   readonly usuarios = signal<UsuarioDTO[]>([]);
   readonly productos = signal<ProductoDTO[]>([]);
   readonly estadoFiltro = signal<'todos' | PedidoEstado>('todos');
@@ -118,6 +124,18 @@ export class PedidosPageComponent implements OnDestroy {
       ),
     );
   });
+  readonly completedOrderEditNotice = computed(() => {
+    if (this.viewMode() !== 'form' || this.originalOrder()?.estado !== 'completado') {
+      return [];
+    }
+
+    return [
+      'Quitar productos devolvera stock.',
+      'Agregar o aumentar cantidades descontara stock.',
+      'Cambiar a cancelado revertira stock.',
+    ];
+  });
+  readonly orderBusinessWarnings = computed(() => this.collectCompletionIssues());
 
   constructor() {
     this.addDetail();
@@ -161,12 +179,14 @@ export class PedidosPageComponent implements OnDestroy {
     forkJoin({
       pedidos: this.pedidosService.list(),
       clientes: this.clientesService.list(),
+      inventario: this.inventarioService.list(),
       usuarios: this.usuariosService.list(),
       productos: this.productosService.list(),
     }).subscribe({
       next: (response) => {
         this.pedidos.set(response.pedidos);
         this.clientes.set(response.clientes);
+        this.inventario.set(response.inventario);
         this.usuarios.set(response.usuarios);
         this.productos.set(response.productos);
         this.loading.set(false);
@@ -242,6 +262,13 @@ export class PedidosPageComponent implements OnDestroy {
       return;
     }
 
+    const completionIssues = this.collectCompletionIssues();
+    if (completionIssues.length > 0) {
+      this.errorMessage.set(completionIssues[0]);
+      this.pedidoForm.markAllAsTouched();
+      return;
+    }
+
     this.saving.set(true);
     this.errorMessage.set(null);
 
@@ -265,6 +292,7 @@ export class PedidosPageComponent implements OnDestroy {
 
     request.subscribe({
       next: () => {
+        this.stockRefresh.notifyStockChanged();
         this.pendingSuccessMessage = this.editingId()
           ? 'Venta actualizada correctamente.'
           : 'Venta registrada correctamente.';
@@ -297,7 +325,10 @@ export class PedidosPageComponent implements OnDestroy {
     }
     this.startActionLoading('Eliminando pedido...');
     this.pedidosService.delete(order.idPedido).subscribe({
-      next: () => this.loadPage(),
+      next: () => {
+        this.stockRefresh.notifyStockChanged();
+        this.loadPage();
+      },
       error: (error: unknown) => {
         this.errorMessage.set(resolveApiError(error));
         this.finishActionLoading();
@@ -307,6 +338,7 @@ export class PedidosPageComponent implements OnDestroy {
 
   resetForm(): void {
     this.editingId.set(null);
+    this.originalOrder.set(null);
     this.clearSuccessMessage();
     this.pedidoForm.reset({ idCliente: null, idUsuario: null, estado: 'pendiente', detalles: [] });
     this.detailsArray.clear();
@@ -414,6 +446,67 @@ export class PedidosPageComponent implements OnDestroy {
     return productId ? this.productLabel(productId) : 'Selecciona un producto desde catalogo';
   }
 
+  detailBusinessWarning(index: number): string | null {
+    const detailGroup = this.detailsArray.at(index);
+    const productId = Number(detailGroup?.controls.idProducto.value ?? 0);
+    if (!productId) {
+      return null;
+    }
+
+    const product = this.productById(productId);
+    if (!product) {
+      return null;
+    }
+
+    if (this.isProductExpired(product)) {
+      return 'Producto vencido. No se puede completar el pedido con este item.';
+    }
+
+    if (this.isStockInsufficient(productId)) {
+      const available = this.availableStock(productId);
+      return `Stock insuficiente. Disponible: ${available}.`;
+    }
+
+    if (this.isProductExpiringSoon(product)) {
+      const days = this.daysUntilExpiration(product);
+      return `Producto por vencer${days !== null ? ` en ${days} dias` : ''}.`;
+    }
+
+    if (this.isStockLow(productId)) {
+      const inventory = this.inventoryByProductId(productId);
+      return `Stock bajo. Minimo sugerido: ${inventory?.stockMinimo ?? 0}.`;
+    }
+
+    return null;
+  }
+
+  productPickerBadges(product: ProductoDTO): string[] {
+    const badges: string[] = [];
+
+    if (this.isProductExpired(product)) {
+      badges.push('Vencido');
+    } else if (this.isProductExpiringSoon(product)) {
+      badges.push('Por vencer');
+    }
+
+    if (product.idProducto && this.isStockInsufficient(product.idProducto)) {
+      badges.push('Stock insuficiente');
+    } else if (product.idProducto && this.isStockLow(product.idProducto)) {
+      badges.push('Stock bajo');
+    }
+
+    return badges;
+  }
+
+  productPickerStockNote(product: ProductoDTO): string {
+    const inventory = this.inventoryByProductId(product.idProducto);
+    if (!inventory) {
+      return 'Inventario no disponible';
+    }
+
+    return `Stock ${inventory.stockActual} · Minimo ${inventory.stockMinimo}`;
+  }
+
   closePicker(): void {
     this.setBackgroundScrollLocked(false);
     this.activePicker.set(null);
@@ -492,6 +585,7 @@ export class PedidosPageComponent implements OnDestroy {
 
   private populateOrder(order: PedidoDTO): void {
     this.editingId.set(order.idPedido ?? null);
+    this.originalOrder.set(order);
     this.pedidoForm.patchValue({
       idCliente: order.idCliente ?? null,
       idUsuario: order.idUsuario,
@@ -532,6 +626,143 @@ export class PedidosPageComponent implements OnDestroy {
     detailGroup.controls.precioUnitario.setValue(Number(product.precioVenta ?? 0));
     detailGroup.controls.precioUnitario.markAsDirty();
     detailGroup.controls.precioUnitario.markAsTouched();
+  }
+
+  private collectCompletionIssues(): string[] {
+    if (this.pedidoForm.controls.estado.value !== 'completado') {
+      return [];
+    }
+
+    const issues: string[] = [];
+    const detailGroups = this.detailsArray.controls.filter((group) => Number(group.controls.idProducto.value ?? 0));
+
+    if (!detailGroups.length) {
+      issues.push('No se puede completar un pedido sin detalles.');
+      return issues;
+    }
+
+    for (const detailGroup of detailGroups) {
+      const productId = Number(detailGroup.controls.idProducto.value ?? 0);
+      const product = this.productById(productId);
+      if (!product) {
+        continue;
+      }
+
+      if (this.isProductExpired(product)) {
+        issues.push(`No se puede agregar un producto vencido: ${product.nombre}.`);
+      }
+
+      if (this.isStockInsufficient(productId)) {
+        issues.push(`Stock insuficiente para ${product.nombre}.`);
+      }
+    }
+
+    return [...new Set(issues)];
+  }
+
+  private productById(productId: number | null | undefined): ProductoDTO | undefined {
+    if (!productId) {
+      return undefined;
+    }
+
+    return this.productos().find((item) => item.idProducto === productId);
+  }
+
+  private inventoryByProductId(productId: number | null | undefined): InventarioDTO | undefined {
+    if (!productId) {
+      return undefined;
+    }
+
+    return this.inventario().find((item) => item.idProducto === productId);
+  }
+
+  private availableStock(productId: number | null | undefined): number {
+    return Number(this.inventoryByProductId(productId)?.stockActual ?? 0);
+  }
+
+  private isStockLow(productId: number | null | undefined): boolean {
+    const inventory = this.inventoryByProductId(productId);
+    if (!inventory) {
+      return false;
+    }
+
+    return Number(inventory.stockActual ?? 0) <= Number(inventory.stockMinimo ?? 0);
+  }
+
+  private isStockInsufficient(productId: number | null | undefined): boolean {
+    if (!productId) {
+      return false;
+    }
+
+    return this.requiredAdditionalStock(productId) > this.availableStock(productId);
+  }
+
+  private requiredAdditionalStock(productId: number): number {
+    if (this.pedidoForm.controls.estado.value !== 'completado') {
+      return 0;
+    }
+
+    const currentQuantity = this.currentDraftQuantity(productId);
+    const originalCommitted = this.originalCommittedQuantity(productId);
+    return Math.max(0, currentQuantity - originalCommitted);
+  }
+
+  private currentDraftQuantity(productId: number): number {
+    return this.detailsArray.controls.reduce((sum, group) => {
+      return Number(group.controls.idProducto.value) === productId
+        ? sum + Number(group.controls.cantidad.value ?? 0)
+        : sum;
+    }, 0);
+  }
+
+  private originalCommittedQuantity(productId: number): number {
+    const originalOrder = this.originalOrder();
+    if (originalOrder?.estado !== 'completado') {
+      return 0;
+    }
+
+    return (originalOrder.detalles ?? []).reduce((sum, detail) => {
+      return Number(detail.idProducto) === productId ? sum + Number(detail.cantidad ?? 0) : sum;
+    }, 0);
+  }
+
+  private isProductExpired(product: ProductoDTO | null | undefined): boolean {
+    const expirationDate = this.parseDateOnly(product?.fechaVencimiento);
+    if (!expirationDate) {
+      return false;
+    }
+
+    return expirationDate.getTime() < this.todayAtMidnight().getTime();
+  }
+
+  private isProductExpiringSoon(product: ProductoDTO | null | undefined): boolean {
+    const days = this.daysUntilExpiration(product);
+    return days !== null && days >= 0 && days <= 30;
+  }
+
+  private daysUntilExpiration(product: ProductoDTO | null | undefined): number | null {
+    const expirationDate = this.parseDateOnly(product?.fechaVencimiento);
+    if (!expirationDate) {
+      return null;
+    }
+
+    const diff = expirationDate.getTime() - this.todayAtMidnight().getTime();
+    return Math.floor(diff / 86400000);
+  }
+
+  private parseDateOnly(value: string | null | undefined): Date | null {
+    if (!value) {
+      return null;
+    }
+
+    const date = new Date(`${value}T00:00:00`);
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
+
+  private todayAtMidnight(): Date {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return today;
   }
 
   private setBackgroundScrollLocked(locked: boolean): void {

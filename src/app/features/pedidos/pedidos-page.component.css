@@ -8,6 +8,24 @@
   border: 1px solid rgba(22, 163, 74, 0.18);
 }
 
+.banner-warning {
+  background: rgba(217, 119, 6, 0.1);
+  color: #92400e;
+  border: 1px solid rgba(217, 119, 6, 0.22);
+}
+
+.banner-warning-strong {
+  background: rgba(239, 68, 68, 0.08);
+  color: #991b1b;
+  border-color: rgba(239, 68, 68, 0.2);
+}
+
+.banner-warning-list {
+  display: grid;
+  gap: 0.3rem;
+  margin-top: 0.6rem;
+}
+
 .orders-filter,
 .detail-header {
   margin-top: 1rem;
@@ -90,6 +108,55 @@
 
 .picker-card span {
   color: rgba(71, 85, 105, 0.92);
+}
+
+.picker-stock-note {
+  font-weight: 600;
+}
+
+.picker-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 0.2rem;
+}
+
+.picker-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.28rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  background: rgba(148, 163, 184, 0.16);
+  color: rgba(51, 65, 85, 0.96);
+}
+
+.picker-badge.expired {
+  background: rgba(239, 68, 68, 0.14);
+  color: #b91c1c;
+}
+
+.picker-badge.expiring {
+  background: rgba(245, 158, 11, 0.14);
+  color: #b45309;
+}
+
+.picker-badge.low-stock {
+  background: rgba(59, 130, 246, 0.14);
+  color: #1d4ed8;
+}
+
+.picker-badge.insufficient {
+  background: rgba(190, 24, 93, 0.14);
+  color: #be185d;
+}
+
+.field-warning {
+  margin: 0.75rem 0 0;
+  color: #b45309;
+  font-weight: 600;
 }
 
 .saving-overlay {

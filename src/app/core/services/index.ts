@@ -1,4 +1,5 @@
 export * from './api';
+export * from './app';
 export * from './auth';
 export * from './http';
 export * from '../../features/boletas/services';

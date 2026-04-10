@@ -1,5 +1,5 @@
 import { CommonModule, DOCUMENT } from '@angular/common';
-import { Component, computed, DestroyRef, inject, input, OnDestroy, OnInit, output, signal } from '@angular/core';
+import { Component, computed, DestroyRef, effect, inject, Injector, input, OnDestroy, OnInit, output, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule, ValidatorFn, Validators } from '@angular/forms';
 import { ActivatedRoute, ParamMap, Router } from '@angular/router';
@@ -35,9 +35,11 @@ export class ResourcePageComponent implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly injector = inject(Injector);
 
   readonly config = input.required<ResourcePageConfig>();
   readonly resourceService = input.required<CrudPageService>();
+  readonly refreshVersion = input(0);
   readonly saved = output<Record<string, unknown>>();
   readonly loading = signal(true);
   readonly saving = signal(false);
@@ -63,6 +65,7 @@ export class ResourcePageComponent implements OnInit, OnDestroy {
   readonly requestedEditId = signal<number | null>(null);
   private pendingSuccessMessage: string | null = null;
   private successMessageTimeoutId: number | null = null;
+  private handledRefreshVersion = 0;
 
   readonly filteredItems = computed(() => {
     const term = this.searchTerm().trim().toLowerCase();
@@ -101,6 +104,19 @@ export class ResourcePageComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.buildForm();
+    this.handledRefreshVersion = this.refreshVersion();
+    effect(
+      () => {
+        const version = this.refreshVersion();
+        if (!version || version === this.handledRefreshVersion) {
+          return;
+        }
+
+        this.handledRefreshVersion = version;
+        this.loadPage('Actualizando listado...');
+      },
+      { injector: this.injector, allowSignalWrites: true },
+    );
     this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
       const view = params.get('vista') === 'formulario' ? 'form' : 'list';
       const rawEditId = params.get('editar');

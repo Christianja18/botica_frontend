@@ -1,8 +1,8 @@
 import { CommonModule, CurrencyPipe } from '@angular/common';
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, Injector, signal } from '@angular/core';
 import { forkJoin } from 'rxjs';
 
-import { resolveApiError } from '../../core/services';
+import { resolveApiError, StockRefreshService } from '../../core/services';
 import { ClientesService } from '../clientes/services';
 import { ClienteDTO as ClienteModelDTO } from '../clientes/models';
 import { PedidosService } from '../pedidos/services';
@@ -26,11 +26,14 @@ import { UsuarioDTO as UsuarioModelDTO } from '../usuarios/models';
 })
 export class DashboardPageComponent {
   private readonly clientesService = inject(ClientesService);
+  private readonly injector = inject(Injector);
   private readonly pedidosService = inject(PedidosService);
   private readonly productosService = inject(ProductosService);
   private readonly reportesService = inject(ReportesService);
+  private readonly stockRefresh = inject(StockRefreshService);
   private readonly usuariosService = inject(UsuariosService);
   private readonly currentYear = 2026;
+  private handledStockRefreshVersion = 0;
 
   readonly loading = signal(true);
   readonly errorMessage = signal<string | null>(null);
@@ -61,6 +64,19 @@ export class DashboardPageComponent {
   );
 
   constructor() {
+    this.handledStockRefreshVersion = this.stockRefresh.version();
+    effect(
+      () => {
+        const version = this.stockRefresh.version();
+        if (!version || version === this.handledStockRefreshVersion) {
+          return;
+        }
+
+        this.handledStockRefreshVersion = version;
+        this.loadDashboard();
+      },
+      { injector: this.injector, allowSignalWrites: true },
+    );
     this.loadDashboard();
   }
 
