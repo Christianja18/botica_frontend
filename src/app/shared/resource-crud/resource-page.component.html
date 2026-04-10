@@ -68,6 +68,7 @@
                     class="field-control textarea"
                     [class.field-control-readonly]="field.readonly"
                     [formControlName]="field.key"
+                    [attr.maxlength]="field.maxLength ?? null"
                     [readOnly]="field.readonly"
                   ></textarea>
                 } @else if (field.type === 'select') {
@@ -106,6 +107,7 @@
                     [class.field-control-readonly]="field.readonly"
                     [type]="fieldInputType(field)"
                     [formControlName]="field.key"
+                    [attr.maxlength]="field.maxLength ?? null"
                     [step]="field.step ?? null"
                     [min]="field.min ?? null"
                     [attr.min]="fieldMinDate(field)"
@@ -117,7 +119,7 @@
                   <span class="field-help">{{ field.helpText }}</span>
                 }
                 @if (controlInvalid(field.key)) {
-                  <span class="field-error">Revisa el campo {{ field.label.toLowerCase() }}.</span>
+                  <span class="field-error">{{ fieldErrorMessage(field) }}</span>
                 }
               </label>
             }

@@ -239,6 +239,57 @@ export class ResourcePageComponent implements OnInit, OnDestroy {
     return !!control && control.invalid && (control.touched || this.submitted());
   }
 
+  fieldErrorMessage(field: ResourceFieldConfig): string {
+    const control = this.form.controls[field.key];
+    if (!control?.errors) {
+      return `Revisa el campo ${field.label.toLowerCase()}.`;
+    }
+
+    if (control.hasError('required')) {
+      return `El campo ${field.label.toLowerCase()} es obligatorio.`;
+    }
+
+    if (control.hasError('email')) {
+      return 'Ingresa un correo valido.';
+    }
+
+    if (control.hasError('minlength')) {
+      const error = control.getError('minlength') as { requiredLength: number; actualLength: number };
+      const missing = Math.max(0, error.requiredLength - error.actualLength);
+      if (field.minLength === field.maxLength) {
+        return missing > 0
+          ? `Faltan ${missing} caracteres. Debe tener exactamente ${field.minLength} caracteres.`
+          : `Debe tener exactamente ${field.minLength} caracteres.`;
+      }
+
+      return missing > 0
+        ? `Faltan ${missing} caracteres. Debe tener al menos ${field.minLength} caracteres.`
+        : `Debe tener al menos ${field.minLength} caracteres.`;
+    }
+
+    if (control.hasError('maxlength')) {
+      return `Solo admite ${field.maxLength} caracteres.`;
+    }
+
+    if (control.hasError('pattern')) {
+      return `El formato de ${field.label.toLowerCase()} no es valido.`;
+    }
+
+    if (control.hasError('min')) {
+      return `El valor minimo para ${field.label.toLowerCase()} es ${field.min}.`;
+    }
+
+    if (control.hasError('maxIsoDate')) {
+      return `La fecha maxima permitida para ${field.label.toLowerCase()} ya fue superada.`;
+    }
+
+    if (control.hasError('minIsoDate')) {
+      return `La fecha minima permitida para ${field.label.toLowerCase()} no se cumple.`;
+    }
+
+    return `Revisa el campo ${field.label.toLowerCase()}.`;
+  }
+
   fieldInputType(field: ResourceFieldConfig): string {
     return field.type === 'currency' ? 'number' : field.type;
   }

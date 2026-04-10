@@ -30,7 +30,8 @@ export const usuariosPageConfig: ResourcePageConfig = {
       type: 'password',
       requiredOnCreate: true,
       minLength: 8,
-      helpText: 'Si editas y lo dejas vacio, se conserva la contrasena actual.',
+      maxLength: 8,
+      helpText: 'La contrasena debe tener exactamente 8 caracteres. Si editas y lo dejas vacio, se conserva la contrasena actual.',
     },
     {
       key: 'idRol',
