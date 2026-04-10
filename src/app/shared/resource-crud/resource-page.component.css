@@ -26,25 +26,31 @@
 .pagination-bar {
   display: flex;
   justify-content: space-between;
-  gap: 1rem;
+  gap: 0.8rem;
   align-items: center;
-  margin-top: 1.1rem;
-  padding-top: 1rem;
+  margin-top: 0.9rem;
+  padding-top: 0.8rem;
   border-top: 1px solid rgba(148, 163, 184, 0.18);
 }
 
 .pagination-info {
   display: grid;
-  gap: 0.2rem;
+  gap: 0.15rem;
+  font-size: 0.82rem;
+}
+
+.pagination-info strong {
+  font-size: 0.92rem;
 }
 
 .pagination-info span {
   color: rgba(71, 85, 105, 0.92);
+  font-size: 0.82rem;
 }
 
 .pagination-controls {
   display: flex;
-  gap: 0.75rem;
+  gap: 0.6rem;
   align-items: center;
   flex-wrap: wrap;
   justify-content: flex-end;
@@ -52,22 +58,23 @@
 
 .pagination-size {
   display: flex;
-  gap: 0.65rem;
+  gap: 0.5rem;
   align-items: center;
   width: auto;
   flex: 0 0 auto;
   color: rgba(30, 41, 59, 0.92);
   font-weight: 600;
+  font-size: 0.88rem;
 }
 
 .pagination-select {
-  width: 4rem;
-  min-width: 4rem;
-  max-width: 4rem;
-  flex: 0 0 4rem;
-  min-height: 2.45rem;
-  padding: 0.4rem 1.45rem 0.4rem 0.78rem;
-  border-radius: 0.95rem;
+  width: 3.35rem;
+  min-width: 3.35rem;
+  max-width: 3.35rem;
+  flex: 0 0 3.35rem;
+  min-height: 1.95rem;
+  padding: 0.3rem 1.15rem 0.3rem 0.62rem;
+  border-radius: 0.8rem;
   appearance: none;
   -webkit-appearance: none;
   -moz-appearance: none;
@@ -75,13 +82,19 @@
     linear-gradient(45deg, transparent 50%, rgba(23, 34, 40, 0.9) 50%),
     linear-gradient(135deg, rgba(23, 34, 40, 0.9) 50%, transparent 50%);
   background-position:
-    calc(100% - 0.76rem) calc(50% - 0.12rem),
-    calc(100% - 0.54rem) calc(50% - 0.12rem);
-  background-size: 0.32rem 0.32rem, 0.32rem 0.32rem;
+    calc(100% - 0.66rem) calc(50% - 0.1rem),
+    calc(100% - 0.48rem) calc(50% - 0.1rem);
+  background-size: 0.28rem 0.28rem, 0.28rem 0.28rem;
   background-repeat: no-repeat;
-  font-size: 0.98rem;
+  font-size: 0.84rem;
   text-align: left;
   font-weight: 700;
+}
+
+.pagination-controls .btn {
+  min-height: 2.25rem;
+  padding: 0.55rem 0.92rem;
+  font-size: 0.84rem;
 }
 
 .saving-overlay {

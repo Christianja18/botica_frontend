@@ -14,8 +14,8 @@
   --radius-xl: 28px;
   --radius-lg: 20px;
   --radius-md: 14px;
-  --action-btn-height: 2.35rem;
-  --action-btn-width: 8.75rem;
+  --action-btn-height: 1.7rem;
+  --action-btn-width: 6rem;
   --transition-base: 180ms ease;
 }
 
@@ -327,13 +327,13 @@ a {
 .table-actions {
   align-items: flex-start;
   flex-wrap: wrap;
-  gap: 0.55rem;
+  gap: 0.38rem;
 }
 
 .table-action-btn {
   min-height: var(--action-btn-height);
-  padding: 0.5rem 0.9rem;
-  font-size: 0.92rem;
+  padding: 0.34rem 0.62rem;
+  font-size: 0.8rem;
 }
 
 .table-actions .btn-ghost.table-action-btn,
@@ -411,7 +411,7 @@ a {
 }
 
 .table-wrap[data-resource='productos'] .table-actions {
-  min-width: 8.6rem;
+  min-width: 6rem;
 }
 
 .form-grid,
