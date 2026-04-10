@@ -24,6 +24,41 @@
   justify-content: flex-end;
 }
 
+.pagination-bar,
+.pagination-controls {
+  display: flex;
+  gap: 0.85rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.pagination-bar {
+  justify-content: space-between;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(148, 163, 184, 0.18);
+}
+
+.pagination-info {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.pagination-info span {
+  color: rgba(71, 85, 105, 0.92);
+}
+
+.pagination-size {
+  display: flex;
+  gap: 0.55rem;
+  align-items: center;
+  font-weight: 600;
+}
+
+.pagination-select {
+  min-width: 5.5rem;
+}
+
 .print-grid {
   display: grid;
   gap: 1rem;
@@ -102,5 +137,15 @@
 
   .print-toolbar {
     justify-content: flex-start;
+  }
+
+  .pagination-bar {
+    align-items: stretch;
+  }
+
+  .pagination-size,
+  .pagination-controls,
+  .pagination-controls .btn {
+    width: 100%;
   }
 }

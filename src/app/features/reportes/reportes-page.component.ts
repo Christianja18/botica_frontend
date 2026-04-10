@@ -1,6 +1,6 @@
 import { CommonModule, CurrencyPipe } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
-import { AbstractControl, FormControl, FormGroup, ReactiveFormsModule, ValidationErrors, ValidatorFn, Validators } from '@angular/forms';
+import { AbstractControl, FormControl, FormGroup, FormsModule, ReactiveFormsModule, ValidationErrors, ValidatorFn, Validators } from '@angular/forms';
 import { forkJoin } from 'rxjs';
 
 import { resolveApiError } from '../../core/services';
@@ -22,7 +22,7 @@ function maxIsoDateValidator(maxDate: string): ValidatorFn {
 
 @Component({
   selector: 'app-reportes-page',
-  imports: [CommonModule, ReactiveFormsModule, CurrencyPipe],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, CurrencyPipe],
   templateUrl: './reportes-page.component.html',
   styleUrl: './reportes-page.component.css',
 })
@@ -38,10 +38,15 @@ export class ReportesPageComponent {
   readonly actionMessage = signal('Cargando informaciÃ³n...');
   readonly errorMessage = signal<string | null>(null);
   readonly reportes = signal<ReporteDTO[]>([]);
+  readonly reportesPage = signal(0);
+  readonly reportesPageSize = signal(5);
+  readonly reportesTotalElements = signal(0);
+  readonly reportesTotalPages = signal(1);
   readonly usuarios = signal<UsuarioDTO[]>([]);
   readonly ventasMensuales = signal<MonthlyMetric[]>([]);
   readonly gananciasMensuales = signal<MonthlyMetric[]>([]);
   readonly todayIso = this.toIsoDate(this.today);
+  readonly pageSizeOptions = [5, 10, 15, 20, 50];
 
   readonly salesForm = new FormGroup({
     fechaInicio: new FormControl('', {
@@ -78,13 +83,22 @@ export class ReportesPageComponent {
     this.loading.set(true);
     this.errorMessage.set(null);
     forkJoin({
-      reportes: this.reportesService.list(),
+      reportesPage: this.reportesService.listPage({
+        page: this.reportesPage(),
+        size: this.reportesPageSize(),
+        sortBy: 'idReporte',
+        direction: 'desc',
+      }),
       usuarios: this.usuariosService.list(),
       ventas: this.reportesService.getVentasPorMes(this.currentYear),
       ganancias: this.reportesService.getGananciasPorMes(this.currentYear),
     }).subscribe({
       next: (response) => {
-        this.reportes.set(response.reportes);
+        this.reportes.set(response.reportesPage.content);
+        this.reportesPage.set(response.reportesPage.page);
+        this.reportesPageSize.set(response.reportesPage.size);
+        this.reportesTotalElements.set(response.reportesPage.totalElements);
+        this.reportesTotalPages.set(Math.max(response.reportesPage.totalPages, 1));
         this.usuarios.set(response.usuarios);
         this.ventasMensuales.set(response.ventas);
         this.gananciasMensuales.set(response.ganancias);
@@ -163,7 +177,12 @@ export class ReportesPageComponent {
     }
     this.startActionLoading('Eliminando reporte...');
     this.reportesService.delete(report.idReporte).subscribe({
-      next: () => this.loadPage(),
+      next: () => {
+        if (this.reportes().length === 1 && this.reportesPage() > 0) {
+          this.reportesPage.update((page) => Math.max(page - 1, 0));
+        }
+        this.loadPage();
+      },
       error: (error: unknown) => {
         this.errorMessage.set(resolveApiError(error));
         this.finishActionLoading();
@@ -194,6 +213,44 @@ export class ReportesPageComponent {
 
   metricValue(item: MonthlyMetric, kind: 'sales' | 'gain'): number {
     return kind === 'sales' ? Number(item.totalVentas ?? item.total_ventas ?? 0) : Number(item.ganancia ?? 0);
+  }
+
+  pageRangeLabel(): string {
+    if (!this.reportesTotalElements()) {
+      return 'Sin reportes generados';
+    }
+
+    const start = this.reportesPage() * this.reportesPageSize() + 1;
+    const end = Math.min(start + this.reportes().length - 1, this.reportesTotalElements());
+    return `Mostrando ${start}-${end} de ${this.reportesTotalElements()} reportes`;
+  }
+
+  previousReportPage(): void {
+    if (this.reportesPage() === 0) {
+      return;
+    }
+
+    this.reportesPage.update((page) => page - 1);
+    this.loadPage('Cargando reportes...');
+  }
+
+  nextReportPage(): void {
+    if (this.reportesPage() + 1 >= this.reportesTotalPages()) {
+      return;
+    }
+
+    this.reportesPage.update((page) => page + 1);
+    this.loadPage('Cargando reportes...');
+  }
+
+  changeReportPageSize(value: number): void {
+    if (value === this.reportesPageSize()) {
+      return;
+    }
+
+    this.reportesPageSize.set(value);
+    this.reportesPage.set(0);
+    this.loadPage('Actualizando historial...');
   }
 
   private toApiDate(value: string): string {

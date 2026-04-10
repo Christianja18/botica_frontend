@@ -1,5 +1,6 @@
 import { CommonModule, CurrencyPipe } from '@angular/common';
 import { Component, DestroyRef, inject, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
 
@@ -12,7 +13,7 @@ import { buildPrintableBoletaDocument, formatCurrency } from './boleta-print.uti
 
 @Component({
   selector: 'app-boletas-page',
-  imports: [CommonModule, CurrencyPipe, ResourcePageComponent],
+  imports: [CommonModule, FormsModule, CurrencyPipe, ResourcePageComponent],
   templateUrl: './boletas-page.component.html',
   styleUrl: './boletas-page.component.css',
 })
@@ -27,6 +28,11 @@ export class BoletasPageComponent {
   readonly loadingBoletas = signal(true);
   readonly printingId = signal<number | null>(null);
   readonly errorMessage = signal<string | null>(null);
+  readonly printPage = signal(0);
+  readonly printPageSize = signal(5);
+  readonly printTotalElements = signal(0);
+  readonly printTotalPages = signal(1);
+  readonly pageSizeOptions = [5, 10, 15, 20, 50];
 
   constructor() {
     this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
@@ -35,14 +41,27 @@ export class BoletasPageComponent {
     this.loadBoletas();
   }
 
-  loadBoletas(): void {
+  loadBoletas(resetPage = false): void {
+    if (resetPage) {
+      this.printPage.set(0);
+    }
+
     this.loadingBoletas.set(true);
     this.errorMessage.set(null);
-    this.resourceService.list().subscribe({
-      next: (boletas) => {
-        this.boletas.set(
-          [...boletas].sort((current, next) => Number(next.idBoleta ?? 0) - Number(current.idBoleta ?? 0)),
-        );
+    this.resourceService
+      .listPage({
+        page: this.printPage(),
+        size: this.printPageSize(),
+        sortBy: 'idBoleta',
+        direction: 'desc',
+      })
+      .subscribe({
+      next: (response) => {
+        this.boletas.set(response.content);
+        this.printPage.set(response.page);
+        this.printPageSize.set(response.size);
+        this.printTotalElements.set(response.totalElements);
+        this.printTotalPages.set(Math.max(response.totalPages, 1));
         this.loadingBoletas.set(false);
       },
       error: (error: unknown) => {
@@ -97,6 +116,48 @@ export class BoletasPageComponent {
 
   boletaDate(boleta: BoletaDTO): string {
     return boleta.fechaEmision || 'Fecha no registrada';
+  }
+
+  handleBoletaSaved(): void {
+    this.loadBoletas(true);
+  }
+
+  printRangeLabel(): string {
+    if (!this.printTotalElements()) {
+      return 'Sin boletas registradas';
+    }
+
+    const start = this.printPage() * this.printPageSize() + 1;
+    const end = Math.min(start + this.boletas().length - 1, this.printTotalElements());
+    return `Mostrando ${start}-${end} de ${this.printTotalElements()} boletas`;
+  }
+
+  previousPrintPage(): void {
+    if (this.printPage() === 0) {
+      return;
+    }
+
+    this.printPage.update((page) => page - 1);
+    this.loadBoletas();
+  }
+
+  nextPrintPage(): void {
+    if (this.printPage() + 1 >= this.printTotalPages()) {
+      return;
+    }
+
+    this.printPage.update((page) => page + 1);
+    this.loadBoletas();
+  }
+
+  changePrintPageSize(value: number): void {
+    if (value === this.printPageSize()) {
+      return;
+    }
+
+    this.printPageSize.set(value);
+    this.printPage.set(0);
+    this.loadBoletas();
   }
 
   pedidoSummary(boleta: BoletaDTO): string {

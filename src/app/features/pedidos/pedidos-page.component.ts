@@ -1,9 +1,9 @@
 import { CommonModule, CurrencyPipe, DOCUMENT } from '@angular/common';
 import { Component, computed, DestroyRef, HostListener, inject, OnDestroy, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { FormArray, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormArray, FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { forkJoin } from 'rxjs';
+import { forkJoin, map, Observable } from 'rxjs';
 
 import { resolveApiError, StockRefreshService } from '../../core/services';
 import { decimalPrecisionValidator } from '../../core/validators';
@@ -53,7 +53,7 @@ type PedidoPickerType = 'cliente' | 'usuario' | 'producto';
 
 @Component({
   selector: 'app-pedidos-page',
-  imports: [CommonModule, ReactiveFormsModule, CurrencyPipe],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, CurrencyPipe],
   templateUrl: './pedidos-page.component.html',
   styleUrl: './pedidos-page.component.css',
 })
@@ -82,6 +82,10 @@ export class PedidosPageComponent implements OnDestroy {
   readonly usuarios = signal<UsuarioDTO[]>([]);
   readonly productos = signal<ProductoDTO[]>([]);
   readonly estadoFiltro = signal<'todos' | PedidoEstado>('todos');
+  readonly historyPage = signal(0);
+  readonly historyPageSize = signal(5);
+  readonly historyTotalElements = signal(0);
+  readonly historyTotalPages = signal(1);
   readonly editingId = signal<number | null>(null);
   readonly viewMode = signal<'list' | 'form'>('list');
   readonly requestedEditId = signal<number | null>(null);
@@ -91,6 +95,7 @@ export class PedidosPageComponent implements OnDestroy {
   readonly pickerSearch = signal('');
   private pendingSuccessMessage: string | null = null;
   private successMessageTimeoutId: number | null = null;
+  readonly pageSizeOptions = [5, 10, 15, 20, 50];
 
   readonly pedidoForm = new FormGroup({
     idCliente: new FormControl<number | null>(null),
@@ -99,10 +104,7 @@ export class PedidosPageComponent implements OnDestroy {
     detalles: new FormArray<DetailFormGroup>([]),
   });
 
-  readonly filteredOrders = computed(() => {
-    const estado = this.estadoFiltro();
-    return estado === 'todos' ? this.pedidos() : this.pedidos().filter((pedido) => pedido.estado === estado);
-  });
+  readonly filteredOrders = computed(() => this.pedidos());
   readonly filteredClientes = computed(() => {
     const term = this.pickerSearch().trim().toLowerCase();
     if (!term) {
@@ -202,14 +204,18 @@ export class PedidosPageComponent implements OnDestroy {
     this.errorMessage.set(null);
 
     forkJoin({
-      pedidos: this.pedidosService.list(),
+      pedidosPage: this.loadOrdersPage(),
       clientes: this.clientesService.list(),
       inventario: this.inventarioService.list(),
       usuarios: this.usuariosService.list(),
       productos: this.productosService.list(),
     }).subscribe({
       next: (response) => {
-        this.pedidos.set(response.pedidos);
+        this.pedidos.set(response.pedidosPage.content);
+        this.historyPage.set(response.pedidosPage.page);
+        this.historyPageSize.set(response.pedidosPage.size);
+        this.historyTotalElements.set(response.pedidosPage.totalElements);
+        this.historyTotalPages.set(Math.max(response.pedidosPage.totalPages, 1));
         this.clientes.set(response.clientes);
         this.inventario.set(response.inventario);
         this.usuarios.set(response.usuarios);
@@ -352,6 +358,9 @@ export class PedidosPageComponent implements OnDestroy {
     this.pedidosService.delete(order.idPedido).subscribe({
       next: () => {
         this.stockRefresh.notifyStockChanged();
+        if (this.pedidos().length === 1 && this.historyPage() > 0) {
+          this.historyPage.update((page) => Math.max(page - 1, 0));
+        }
         this.loadPage();
       },
       error: (error: unknown) => {
@@ -560,6 +569,50 @@ export class PedidosPageComponent implements OnDestroy {
     return 'pending';
   }
 
+  setEstadoFiltro(value: 'todos' | PedidoEstado): void {
+    this.estadoFiltro.set(value);
+    this.historyPage.set(0);
+    this.loadPage('Filtrando pedidos...');
+  }
+
+  historyRangeLabel(): string {
+    if (!this.historyTotalElements()) {
+      return 'Sin pedidos registrados';
+    }
+
+    const start = this.historyPage() * this.historyPageSize() + 1;
+    const end = Math.min(start + this.pedidos().length - 1, this.historyTotalElements());
+    return `Mostrando ${start}-${end} de ${this.historyTotalElements()} pedidos`;
+  }
+
+  previousHistoryPage(): void {
+    if (this.historyPage() === 0) {
+      return;
+    }
+
+    this.historyPage.update((page) => page - 1);
+    this.loadPage('Cargando pedidos...');
+  }
+
+  nextHistoryPage(): void {
+    if (this.historyPage() + 1 >= this.historyTotalPages()) {
+      return;
+    }
+
+    this.historyPage.update((page) => page + 1);
+    this.loadPage('Cargando pedidos...');
+  }
+
+  changeHistoryPageSize(value: number): void {
+    if (value === this.historyPageSize()) {
+      return;
+    }
+
+    this.historyPageSize.set(value);
+    this.historyPage.set(0);
+    this.loadPage('Actualizando historial...');
+  }
+
   selectOrderForBoleta(order: PedidoDTO): void {
     if (!order.idPedido) {
       return;
@@ -571,6 +624,43 @@ export class PedidosPageComponent implements OnDestroy {
         pedidoSeleccionado: order.idPedido,
       },
     });
+  }
+
+  private loadOrdersPage(): Observable<{
+    content: PedidoDTO[];
+    page: number;
+    size: number;
+    totalElements: number;
+    totalPages: number;
+  }> {
+    const estado = this.estadoFiltro();
+
+    if (estado === 'todos') {
+      return this.pedidosService.listPage({
+        page: this.historyPage(),
+        size: this.historyPageSize(),
+        sortBy: 'idPedido',
+        direction: 'desc',
+      });
+    }
+
+    return this.pedidosService.getByEstado(estado).pipe(
+      map((items) => {
+        const size = this.historyPageSize();
+        const totalElements = items.length;
+        const totalPages = Math.max(Math.ceil(totalElements / size), 1);
+        const page = Math.min(this.historyPage(), totalPages - 1);
+        const start = page * size;
+
+        return {
+          content: items.slice(start, start + size),
+          page,
+          size,
+          totalElements,
+          totalPages,
+        };
+      }),
+    );
   }
 
   private syncFormWithRouteState(): void {

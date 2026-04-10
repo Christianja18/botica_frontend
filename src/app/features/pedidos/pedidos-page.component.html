@@ -6,7 +6,7 @@
       Flujo principal de venta para guardar cabecera y detalle del pedido en una sola operacion.
     </p>
     <div class="page-toolbar">
-      <span class="pill">{{ pedidos().length }} pedidos totales</span>
+      <span class="pill">{{ historyTotalElements() }} pedidos totales</span>
       @if (viewMode() === 'list') {
         <button class="btn btn-ghost" type="button" (click)="loadPage('Actualizando pedidos...')">Actualizar</button>
         <button class="btn btn-primary" type="button" (click)="openCreateView()">Nuevo pedido</button>
@@ -171,12 +171,27 @@
           <h2 class="panel-title">Historial de pedidos</h2>
           <p class="panel-subtitle">Consulta ventas guardadas desde el flujo transaccional principal de pedidos.</p>
         </div>
-        <select class="field-control orders-filter" [value]="estadoFiltro()" (change)="estadoFiltro.set($any($event.target).value)">
-          <option value="todos">Todos</option>
-          <option value="pendiente">Pendientes</option>
-          <option value="completado">Completados</option>
-          <option value="cancelado">Cancelados</option>
-        </select>
+        <div class="orders-history-tools">
+          <select class="field-control orders-filter" [ngModel]="estadoFiltro()" [ngModelOptions]="{ standalone: true }" (ngModelChange)="setEstadoFiltro($event)">
+            <option value="todos">Todos</option>
+            <option value="pendiente">Pendientes</option>
+            <option value="completado">Completados</option>
+            <option value="cancelado">Cancelados</option>
+          </select>
+          <label class="pagination-size">
+            <span>Mostrar</span>
+            <select
+              class="field-control pagination-select"
+              [ngModel]="historyPageSize()"
+              [ngModelOptions]="{ standalone: true }"
+              (ngModelChange)="changeHistoryPageSize($event)"
+            >
+              @for (size of pageSizeOptions; track size) {
+                <option [ngValue]="size">{{ size }}</option>
+              }
+            </select>
+          </label>
+        </div>
       </div>
 
       @if (loading()) {
@@ -220,6 +235,25 @@
               </div>
             </article>
           }
+        </div>
+        <div class="pagination-bar">
+          <div class="pagination-info">
+            <strong>Pagina {{ historyPage() + 1 }} de {{ historyTotalPages() }}</strong>
+            <span>{{ historyRangeLabel() }}</span>
+          </div>
+          <div class="pagination-controls">
+            <button class="btn btn-secondary" type="button" [disabled]="historyPage() === 0" (click)="previousHistoryPage()">
+              Anterior
+            </button>
+            <button
+              class="btn btn-secondary"
+              type="button"
+              [disabled]="historyPage() + 1 >= historyTotalPages()"
+              (click)="nextHistoryPage()"
+            >
+              Siguiente
+            </button>
+          </div>
         </div>
       }
     </article>

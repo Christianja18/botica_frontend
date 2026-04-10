@@ -1,5 +1,5 @@
 <section class="boletas-page">
-  <app-resource-page [config]="config" [resourceService]="resourceService" (saved)="loadBoletas()" />
+  <app-resource-page [config]="config" [resourceService]="resourceService" (saved)="handleBoletaSaved()" />
 
   @if (crudViewMode() === 'list') {
     <section class="page-shell print-shell">
@@ -17,7 +17,20 @@
             </p>
           </div>
           <div class="print-toolbar">
-            <span class="pill">{{ boletas().length }} boletas detectadas</span>
+            <span class="pill">{{ printTotalElements() }} boletas detectadas</span>
+            <label class="pagination-size">
+              <span>Mostrar</span>
+              <select
+                class="field-control pagination-select"
+                [ngModel]="printPageSize()"
+                [ngModelOptions]="{ standalone: true }"
+                (ngModelChange)="changePrintPageSize($event)"
+              >
+                @for (size of pageSizeOptions; track size) {
+                  <option [ngValue]="size">{{ size }}</option>
+                }
+              </select>
+            </label>
             <button class="btn btn-ghost" type="button" (click)="loadBoletas()">Actualizar impresion</button>
           </div>
         </div>
@@ -79,6 +92,25 @@
                 </div>
               </article>
             }
+          </div>
+          <div class="pagination-bar">
+            <div class="pagination-info">
+              <strong>Pagina {{ printPage() + 1 }} de {{ printTotalPages() }}</strong>
+              <span>{{ printRangeLabel() }}</span>
+            </div>
+            <div class="pagination-controls">
+              <button class="btn btn-secondary" type="button" [disabled]="printPage() === 0" (click)="previousPrintPage()">
+                Anterior
+              </button>
+              <button
+                class="btn btn-secondary"
+                type="button"
+                [disabled]="printPage() + 1 >= printTotalPages()"
+                (click)="nextPrintPage()"
+              >
+                Siguiente
+              </button>
+            </div>
           </div>
         }
       </article>

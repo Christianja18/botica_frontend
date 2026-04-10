@@ -4,7 +4,7 @@
     <h1 class="page-title">Reportes</h1>
     <p class="page-description">Genera reportes de ventas e inventario usando los endpoints especiales del backend y consulta el histórico generado.</p>
     <div class="page-toolbar">
-      <span class="pill">{{ reportes().length }} reportes almacenados</span>
+      <span class="pill">{{ reportesTotalElements() }} reportes almacenados</span>
       <button class="btn btn-ghost" type="button" (click)="loadPage('Actualizando reportes...')">Actualizar</button>
     </div>
   </header>
@@ -86,6 +86,22 @@
           <h2 class="panel-title">Historial de reportes</h2>
           <p class="panel-subtitle">Registros persistidos en `/api/reportes`.</p>
         </div>
+        <div class="history-toolbar">
+          <span class="pill">Pagina {{ reportesPage() + 1 }} de {{ reportesTotalPages() }}</span>
+          <label class="pagination-size">
+            <span>Mostrar</span>
+            <select
+              class="field-control pagination-select"
+              [ngModel]="reportesPageSize()"
+              [ngModelOptions]="{ standalone: true }"
+              (ngModelChange)="changeReportPageSize($event)"
+            >
+              @for (size of pageSizeOptions; track size) {
+                <option [ngValue]="size">{{ size }}</option>
+              }
+            </select>
+          </label>
+        </div>
       </div>
       @if (loading()) {
         <div class="empty-state"><strong>Cargando reportes...</strong></div>
@@ -109,6 +125,25 @@
               }
             </article>
           }
+        </div>
+        <div class="pagination-bar">
+          <div class="pagination-info">
+            <strong>Pagina {{ reportesPage() + 1 }} de {{ reportesTotalPages() }}</strong>
+            <span>{{ pageRangeLabel() }}</span>
+          </div>
+          <div class="pagination-controls">
+            <button class="btn btn-secondary" type="button" [disabled]="reportesPage() === 0" (click)="previousReportPage()">
+              Anterior
+            </button>
+            <button
+              class="btn btn-secondary"
+              type="button"
+              [disabled]="reportesPage() + 1 >= reportesTotalPages()"
+              (click)="nextReportPage()"
+            >
+              Siguiente
+            </button>
+          </div>
         </div>
       }
     </article>
