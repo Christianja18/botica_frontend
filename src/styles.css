@@ -14,6 +14,8 @@
   --radius-xl: 28px;
   --radius-lg: 20px;
   --radius-md: 14px;
+  --action-btn-height: 2.35rem;
+  --action-btn-width: 8.75rem;
   --transition-base: 180ms ease;
 }
 
@@ -26,14 +28,39 @@ body {
   min-height: 100%;
 }
 
+html {
+  overflow-y: auto;
+  scrollbar-gutter: stable both-edges;
+}
+
 body {
   margin: 0;
   font-family: var(--font-body);
   color: var(--text-main);
+  overflow-x: hidden;
   background:
     radial-gradient(circle at top left, rgba(18, 116, 117, 0.18), transparent 35%),
     radial-gradient(circle at right 15%, rgba(244, 162, 89, 0.22), transparent 32%),
     linear-gradient(180deg, #fffaf1 0%, #f3efe7 55%, #eef3f0 100%);
+}
+
+html,
+body,
+.shell-sidebar,
+.table-wrap,
+.picker-list {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+html::-webkit-scrollbar,
+body::-webkit-scrollbar,
+.shell-sidebar::-webkit-scrollbar,
+.table-wrap::-webkit-scrollbar,
+.picker-list::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
 }
 
 button,
@@ -108,6 +135,7 @@ a {
   display: flex;
   gap: 0.75rem;
   flex-wrap: wrap;
+  row-gap: 0.65rem;
 }
 
 .btn {
@@ -115,11 +143,14 @@ a {
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  min-height: 2.9rem;
-  padding: 0.7rem 1.2rem;
+  min-height: 2.8rem;
+  padding: 0.68rem 1.15rem;
   border: 0;
   border-radius: 999px;
+  font-size: 0.98rem;
   font-weight: 700;
+  line-height: 1.1;
+  white-space: nowrap;
   transition:
     transform var(--transition-base),
     opacity var(--transition-base);
@@ -158,6 +189,7 @@ a {
 .page-shell {
   display: grid;
   gap: 1.5rem;
+  min-width: 0;
 }
 
 .page-hero,
@@ -165,6 +197,7 @@ a {
 .stat-card,
 .order-card {
   padding: 1.4rem;
+  min-width: 0;
 }
 
 .page-kicker {
@@ -204,9 +237,19 @@ a {
   margin-top: 1.4rem;
 }
 
+.page-toolbar > .search-input {
+  flex: 1 1 24rem;
+}
+
+.page-toolbar > .btn,
+.page-toolbar > .pill {
+  flex: 0 0 auto;
+}
+
 .search-input,
 .field-control {
   width: 100%;
+  min-width: 0;
   min-height: 3rem;
   padding: 0.85rem 1rem;
   border: 1px solid rgba(18, 52, 59, 0.15);
@@ -222,6 +265,8 @@ a {
 .field {
   display: grid;
   gap: 0.45rem;
+  align-content: start;
+  min-width: 0;
 }
 
 .field-label {
@@ -234,6 +279,141 @@ a {
   font-size: 0.82rem;
 }
 
+.resource-form {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.resource-form-grid {
+  grid-auto-flow: row dense;
+  gap: 1.05rem 1.25rem;
+}
+
+.resource-form .form-actions {
+  margin-top: 0.4rem;
+  padding-top: 0.45rem;
+}
+
+.resource-form .field-help {
+  max-width: 38ch;
+}
+
+[data-field-type='textarea'] .field-control.textarea {
+  min-height: 5.25rem;
+}
+
+[data-field-type='checkbox'] {
+  align-self: start;
+  justify-self: start;
+  width: fit-content;
+  max-width: 100%;
+  min-height: 3rem;
+  padding-top: 0.15rem;
+}
+
+[data-field-type='checkbox'] > div {
+  display: grid;
+  gap: 0.18rem;
+}
+
+[data-field-type='checkbox'] .field-label {
+  white-space: normal;
+}
+
+[data-field-type='checkbox'] .field-control {
+  margin-top: 0.12rem;
+}
+
+.table-actions {
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.table-action-btn {
+  min-height: var(--action-btn-height);
+  padding: 0.5rem 0.9rem;
+  font-size: 0.92rem;
+}
+
+.table-actions .btn-ghost.table-action-btn,
+.table-actions .btn-danger.table-action-btn {
+  inline-size: var(--action-btn-width);
+  justify-content: center;
+}
+
+.resource-form[data-resource='clientes'] .resource-form-grid,
+.resource-form[data-resource='usuarios'] .resource-form-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.resource-form[data-resource='boletas'] .resource-form-grid,
+.resource-form[data-resource='proveedores'] .resource-form-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.resource-form[data-resource='categorias'] .resource-form-grid,
+.resource-form[data-resource='roles'] .resource-form-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.resource-form[data-resource='productos'] .resource-form-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.resource-form[data-resource='clientes'] [data-field-key='email'] {
+  grid-column: span 2;
+}
+
+.resource-form[data-resource='boletas'] [data-field-key='idPedido'] .field-help,
+.resource-form[data-resource='boletas'] [data-field-key='numeroBoleta'] .field-help,
+.resource-form[data-resource='productos'] [data-field-key='idProveedor'] .field-help {
+  margin-top: 0.2rem;
+}
+
+.resource-form[data-resource='boletas'] [data-field-key='impresa'] {
+  align-self: center;
+  padding-top: 2rem;
+}
+
+.resource-form[data-resource='categorias'] [data-field-key='descripcion'] .field-control.textarea {
+  min-height: 4.6rem;
+}
+
+.resource-form[data-resource='proveedores'] [data-field-key='direccion'] {
+  grid-column: span 2;
+}
+
+.resource-form[data-resource='usuarios'] [data-field-key='passwordHash'] .field-help {
+  max-width: 32ch;
+}
+
+.resource-form[data-resource='usuarios'] [data-field-key='activo'] {
+  align-self: center;
+  padding-top: 2rem;
+}
+
+.resource-form[data-resource='roles'] [data-field-key='descripcion'] .field-control.textarea {
+  min-height: 5rem;
+}
+
+.resource-form[data-resource='productos'] [data-field-key='idProveedor'] {
+  grid-column: span 2;
+}
+
+.resource-form[data-resource='productos'] [data-field-key='descripcion'] {
+  grid-column: 1 / -1;
+}
+
+.resource-form[data-resource='productos'] [data-field-key='requiereReceta'] {
+  align-self: center;
+  padding-top: 2rem;
+}
+
+.table-wrap[data-resource='productos'] .table-actions {
+  min-width: 8.6rem;
+}
+
 .form-grid,
 .stat-grid,
 .card-grid {
@@ -242,7 +422,8 @@ a {
 }
 
 .form-grid {
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  align-items: start;
 }
 
 .stat-grid {
@@ -272,7 +453,9 @@ a {
 }
 
 .table-wrap {
+  width: 100%;
   overflow-x: auto;
+  overscroll-behavior-x: contain;
 }
 
 .data-table {
@@ -286,12 +469,28 @@ a {
   border-bottom: 1px solid rgba(18, 52, 59, 0.08);
   text-align: left;
   vertical-align: top;
+  overflow-wrap: anywhere;
 }
 
 .data-table th {
   font-size: 0.82rem;
   color: var(--text-muted);
   text-transform: uppercase;
+}
+
+.data-table th:last-child,
+.data-table td:last-child {
+  width: 1%;
+  white-space: nowrap;
+  position: sticky;
+  right: 0;
+  background: linear-gradient(90deg, rgba(255, 250, 242, 0.92), rgba(255, 250, 242, 0.98));
+  z-index: 1;
+  border-left: 1px solid rgba(18, 52, 59, 0.08);
+}
+
+.data-table th:last-child {
+  z-index: 2;
 }
 
 .empty-state {
@@ -327,6 +526,101 @@ a {
   background: rgba(201, 79, 79, 0.12);
   border-color: rgba(201, 79, 79, 0.24);
   color: #8a3333;
+}
+
+.picker-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+  background: rgba(15, 23, 42, 0.38);
+  backdrop-filter: blur(8px);
+  overscroll-behavior: contain;
+}
+
+.picker-modal {
+  width: min(920px, 100%);
+  max-height: min(82vh, 880px);
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  gap: 1.15rem;
+  overflow: hidden;
+  padding: clamp(1.25rem, 2.6vw, 1.8rem);
+}
+
+.picker-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 1rem 1.25rem;
+  align-items: start;
+}
+
+.picker-header-body,
+.picker-section {
+  width: min(100%, 52rem);
+  margin-inline: auto;
+}
+
+.picker-header-body .page-kicker {
+  margin-bottom: 0.45rem;
+}
+
+.picker-header-body .panel-title {
+  margin-bottom: 0.5rem;
+}
+
+.picker-header-body .panel-subtitle {
+  margin: 0;
+}
+
+.picker-close-btn {
+  align-self: start;
+  min-width: 6.5rem;
+}
+
+.picker-toolbar {
+  display: flex;
+  gap: 0.85rem;
+  align-items: center;
+}
+
+.picker-toolbar .search-input {
+  flex: 1;
+}
+
+.picker-list {
+  display: grid;
+  gap: 0.85rem;
+  min-height: 0;
+  overflow: auto;
+  padding-right: 0.2rem;
+  overscroll-behavior: contain;
+}
+
+.picker-card {
+  display: grid;
+  gap: 0.3rem;
+  width: 100%;
+  padding: 1rem 1.1rem;
+  text-align: left;
+  border-radius: 1rem;
+  border: 1px solid rgba(148, 163, 184, 0.26);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.95));
+  color: inherit;
+  cursor: pointer;
+  transition: transform 120ms ease, border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.picker-card:hover {
+  transform: translateY(-1px);
+  border-color: rgba(13, 148, 136, 0.34);
+  box-shadow: 0 16px 32px rgba(15, 23, 42, 0.08);
+}
+
+.picker-card span {
+  color: rgba(71, 85, 105, 0.92);
 }
 
 .mini-list,
@@ -412,5 +706,71 @@ a {
 
   .btn {
     width: 100%;
+  }
+}
+
+@media (max-width: 720px) {
+  .picker-header {
+    grid-template-columns: 1fr;
+  }
+
+  .picker-header-body,
+  .picker-section {
+    width: 100%;
+  }
+
+  .picker-close-btn {
+    width: 100%;
+  }
+
+  .picker-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .picker-overlay {
+    padding: 0.75rem;
+  }
+}
+
+@media (max-width: 1100px) {
+  .resource-form[data-resource='clientes'] .resource-form-grid,
+  .resource-form[data-resource='usuarios'] .resource-form-grid,
+  .resource-form[data-resource='boletas'] .resource-form-grid,
+  .resource-form[data-resource='proveedores'] .resource-form-grid,
+  .resource-form[data-resource='productos'] .resource-form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .resource-form[data-resource='clientes'] [data-field-key='email'],
+  .resource-form[data-resource='proveedores'] [data-field-key='direccion'],
+  .resource-form[data-resource='productos'] [data-field-key='idProveedor'],
+  .resource-form[data-resource='productos'] [data-field-key='descripcion'] {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 720px) {
+  .resource-form[data-resource='clientes'] .resource-form-grid,
+  .resource-form[data-resource='usuarios'] .resource-form-grid,
+  .resource-form[data-resource='boletas'] .resource-form-grid,
+  .resource-form[data-resource='proveedores'] .resource-form-grid,
+  .resource-form[data-resource='categorias'] .resource-form-grid,
+  .resource-form[data-resource='roles'] .resource-form-grid,
+  .resource-form[data-resource='productos'] .resource-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .resource-form[data-resource='clientes'] [data-field-key='email'],
+  .resource-form[data-resource='proveedores'] [data-field-key='direccion'],
+  .resource-form[data-resource='productos'] [data-field-key='idProveedor'],
+  .resource-form[data-resource='productos'] [data-field-key='descripcion'] {
+    grid-column: auto;
+  }
+
+  .resource-form[data-resource='boletas'] [data-field-key='impresa'],
+  .resource-form[data-resource='usuarios'] [data-field-key='activo'],
+  .resource-form[data-resource='productos'] [data-field-key='requiereReceta'] {
+    padding-top: 0.15rem;
   }
 }

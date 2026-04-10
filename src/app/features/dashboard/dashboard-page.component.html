@@ -114,8 +114,8 @@
         </div>
         <div class="mini-list">
           @for (usuario of usuarios(); track usuario.idUsuario) {
-            <article class="mini-row">
-              <div>
+            <article class="mini-row team-row">
+              <div class="team-info">
                 <strong>{{ usuario.nombre }} {{ usuario.apellido }}</strong>
                 <p class="muted">{{ usuario.email }}</p>
               </div>

@@ -6,6 +6,25 @@
   margin-top: 1.5rem;
 }
 
+.report-form {
+  display: grid;
+  gap: 1.1rem;
+}
+
+.report-form-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem 1.25rem;
+  align-items: start;
+}
+
+.report-form-grid-single {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.report-actions {
+  margin-top: 0.35rem;
+}
+
 .saving-overlay {
   position: fixed;
   inset: 0;
@@ -38,5 +57,11 @@
 @keyframes spin {
   to {
     transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 960px) {
+  .report-form-grid {
+    grid-template-columns: 1fr;
   }
 }

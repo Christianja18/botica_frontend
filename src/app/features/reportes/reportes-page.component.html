@@ -21,8 +21,8 @@
           <p class="panel-subtitle">El backend espera fechas en formato `dd/MM/yyyy`.</p>
         </div>
       </div>
-      <form [formGroup]="salesForm" (ngSubmit)="createSalesReport()">
-        <div class="form-grid">
+      <form class="report-form" [formGroup]="salesForm" (ngSubmit)="createSalesReport()">
+        <div class="form-grid report-form-grid">
           <label class="field">
             <span class="field-label">Fecha inicio</span>
             <input class="field-control" type="date" formControlName="fechaInicio" [max]="todayIso" />
@@ -47,7 +47,7 @@
             </select>
           </label>
         </div>
-        <div class="form-actions">
+        <div class="form-actions report-actions">
           <button class="btn btn-primary" type="submit" [disabled]="generating()">
             {{ generating() ? 'Generando...' : 'Generar ventas' }}
           </button>
@@ -60,8 +60,8 @@
           <p class="panel-subtitle">Consulta inmediata del inventario y productos con stock bajo.</p>
         </div>
       </div>
-      <form [formGroup]="inventoryForm" (ngSubmit)="createInventoryReport()">
-        <div class="form-grid">
+      <form class="report-form" [formGroup]="inventoryForm" (ngSubmit)="createInventoryReport()">
+        <div class="form-grid report-form-grid report-form-grid-single">
           <label class="field">
             <span class="field-label">Generado por</span>
             <select class="field-control" formControlName="idUsuario">
@@ -72,7 +72,7 @@
             </select>
           </label>
         </div>
-        <div class="form-actions">
+        <div class="form-actions report-actions">
           <button class="btn btn-secondary" type="submit" [disabled]="generating()">
             {{ generating() ? 'Generando...' : 'Generar inventario' }}
           </button>

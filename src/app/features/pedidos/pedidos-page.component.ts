@@ -1,5 +1,5 @@
 import { CommonModule, CurrencyPipe, DOCUMENT } from '@angular/common';
-import { Component, computed, DestroyRef, inject, OnDestroy, signal } from '@angular/core';
+import { Component, computed, DestroyRef, HostListener, inject, OnDestroy, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormArray, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -177,6 +177,16 @@ export class PedidosPageComponent implements OnDestroy {
   ngOnDestroy(): void {
     this.setBackgroundScrollLocked(false);
     this.clearSuccessMessage();
+  }
+
+  @HostListener('document:keydown.escape', ['$event'])
+  handleEscapeKey(event: Event): void {
+    if (!this.activePicker()) {
+      return;
+    }
+
+    event.preventDefault();
+    this.closePicker();
   }
 
   get detailsArray(): FormArray<DetailFormGroup> {

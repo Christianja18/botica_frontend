@@ -1,5 +1,5 @@
 import { CommonModule, DOCUMENT } from '@angular/common';
-import { Component, computed, DestroyRef, effect, inject, Injector, input, OnDestroy, OnInit, output, signal } from '@angular/core';
+import { Component, computed, DestroyRef, effect, HostListener, inject, Injector, input, OnDestroy, OnInit, output, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, ParamMap, Router } from '@angular/router';
@@ -180,6 +180,16 @@ export class ResourcePageComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.setBackgroundScrollLocked(false);
     this.clearSuccessMessage();
+  }
+
+  @HostListener('document:keydown.escape', ['$event'])
+  handleEscapeKey(event: Event): void {
+    if (!this.activePickerField()) {
+      return;
+    }
+
+    event.preventDefault();
+    this.closePickerModal();
   }
 
   loadPage(busyMessage?: string): void {

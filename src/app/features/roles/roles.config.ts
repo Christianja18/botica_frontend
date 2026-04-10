@@ -19,10 +19,10 @@ export const rolesPageConfig: ResourcePageConfig = {
   fields: [
     { key: 'nombre', label: 'Nombre', type: 'text', required: true, maxLength: 50 },
     { key: 'descripcion', label: 'Descripcion', type: 'textarea', maxLength: 255 },
+    { key: 'activo', label: 'Activo', type: 'checkbox' },
     { key: 'puedeVender', label: 'Puede vender', type: 'checkbox' },
     { key: 'puedeAdministrarInventario', label: 'Administra inventario', type: 'checkbox' },
     { key: 'puedeVerReportes', label: 'Puede ver reportes', type: 'checkbox' },
     { key: 'puedeAdministrarUsuarios', label: 'Administra usuarios', type: 'checkbox' },
-    { key: 'activo', label: 'Activo', type: 'checkbox' },
   ],
 };

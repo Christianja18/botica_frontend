@@ -62,28 +62,29 @@
       }
 
       <form [formGroup]="pedidoForm" (ngSubmit)="saveOrder()">
-        <div class="form-grid">
-          <label class="field">
+        <div class="form-grid order-summary-grid">
+          <label class="field field-with-action order-summary-field">
             <span class="field-label">Cliente</span>
             <input class="field-control field-control-readonly" type="text" [value]="selectedClientLabel()" readonly />
             <div class="field-picker-row">
               <button class="btn btn-ghost" type="button" (click)="openClientPicker()">Buscar cliente</button>
             </div>
           </label>
-          <label class="field">
+          <label class="field field-with-action order-summary-field">
             <span class="field-label">Usuario</span>
             <input class="field-control field-control-readonly" type="text" [value]="selectedUserLabel()" readonly />
             <div class="field-picker-row">
               <button class="btn btn-ghost" type="button" (click)="openUserPicker()">Buscar usuario</button>
             </div>
           </label>
-          <label class="field">
+          <label class="field order-summary-field">
             <span class="field-label">Estado</span>
             <select class="field-control" formControlName="estado">
               <option value="pendiente">Pendiente</option>
               <option value="completado">Completado</option>
               <option value="cancelado">Cancelado</option>
             </select>
+            <div class="field-picker-row field-picker-row-placeholder" aria-hidden="true"></div>
           </label>
         </div>
 
@@ -99,18 +100,19 @@
           @for (group of detailsArray.controls; track group) {
             <div class="detail-box" [formGroupName]="$index">
               <div class="detail-row">
-                <label class="field">
+                <label class="field field-with-action detail-field detail-field-product">
                   <span class="field-label">Producto</span>
                   <input class="field-control field-control-readonly" type="text" [value]="selectedProductLabel($index)" readonly />
                   <div class="field-picker-row">
                     <button class="btn btn-ghost" type="button" (click)="openProductPicker($index)">Buscar producto</button>
                   </div>
                 </label>
-                <label class="field">
+                <label class="field detail-field">
                   <span class="field-label">Cantidad</span>
                   <input class="field-control" type="number" min="1" formControlName="cantidad" />
+                  <div class="field-picker-row field-picker-row-placeholder" aria-hidden="true"></div>
                 </label>
-                <label class="field">
+                <label class="field detail-field">
                   <span class="field-label">Precio unitario</span>
                   <input
                     class="field-control field-control-readonly"
@@ -120,12 +122,14 @@
                     formControlName="precioUnitario"
                     readonly
                   />
+                  <div class="field-picker-row field-picker-row-placeholder" aria-hidden="true"></div>
                 </label>
-                <div class="field">
+                <div class="field detail-field">
                   <span class="field-label">Subtotal</span>
                   <div class="field-control field-control-readonly">
                     {{ detailSubtotal($index) | currency: 'PEN':'symbol':'1.2-2' }}
                   </div>
+                  <div class="field-picker-row field-picker-row-placeholder" aria-hidden="true"></div>
                 </div>
               </div>
               @if (detailBusinessWarning($index); as detailWarning) {
@@ -162,7 +166,7 @@
     </article>
   } @else {
     <article class="surface panel">
-      <div class="panel-header">
+      <div class="panel-header orders-history-header">
         <div>
           <h2 class="panel-title">Historial de pedidos</h2>
           <p class="panel-subtitle">Consulta ventas guardadas desde el flujo transaccional principal de pedidos.</p>
@@ -205,14 +209,14 @@
                   </article>
                 }
               </div>
-              <div class="form-actions">
+              <div class="form-actions order-actions">
                 @if (selectorMode() === 'boleta') {
-                  <button class="btn btn-primary" type="button" (click)="selectOrderForBoleta(pedido)">
+                  <button class="btn btn-primary order-action-btn" type="button" (click)="selectOrderForBoleta(pedido)">
                     Usar en boleta
                   </button>
                 }
-                <button class="btn btn-ghost" type="button" (click)="editOrder(pedido)">Actualizar</button>
-                <button class="btn btn-danger" type="button" (click)="deleteOrder(pedido)">Eliminar</button>
+                <button class="btn btn-ghost order-action-btn" type="button" (click)="editOrder(pedido)">Actualizar</button>
+                <button class="btn btn-danger order-action-btn" type="button" (click)="deleteOrder(pedido)">Eliminar</button>
               </div>
             </article>
           }
@@ -224,8 +228,8 @@
   @if (activePicker()) {
     <div class="picker-overlay" (click)="closePicker()">
       <article class="surface picker-modal" (click)="$event.stopPropagation()">
-        <div class="panel-header">
-          <div>
+        <div class="panel-header picker-header">
+          <div class="picker-header-body">
             <p class="page-kicker">Seleccion asistida</p>
             <h2 class="panel-title">
               @switch (activePicker()) {
@@ -236,10 +240,10 @@
             </h2>
             <p class="panel-subtitle">Elige un registro y se aplicara inmediatamente al pedido.</p>
           </div>
-          <button class="btn btn-secondary" type="button" (click)="closePicker()">Cerrar</button>
+          <button class="btn btn-secondary picker-close-btn" type="button" (click)="closePicker()">Cerrar</button>
         </div>
 
-        <div class="picker-toolbar">
+        <div class="picker-toolbar picker-section">
           <input
             class="search-input"
             type="search"
@@ -252,7 +256,7 @@
           }
         </div>
 
-        <div class="picker-list">
+        <div class="picker-list picker-section">
           @if (activePicker() === 'cliente') {
             @for (cliente of filteredClientes(); track cliente.idCliente) {
               <button class="picker-card" type="button" (click)="pickClient(cliente)">

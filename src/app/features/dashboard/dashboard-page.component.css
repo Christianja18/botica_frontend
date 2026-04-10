@@ -1,3 +1,38 @@
 :host {
   display: block;
 }
+
+.team-row {
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 1rem 1.55rem;
+  align-items: start;
+}
+
+.team-info strong {
+  display: block;
+}
+
+.team-info .muted {
+  margin: 0.8rem 0 0;
+}
+
+.team-row .status-pill {
+  justify-self: end;
+  align-self: start;
+  margin-left: 1rem;
+  margin-right: 0.3rem;
+  margin-top: 0.08rem;
+}
+
+@media (max-width: 640px) {
+  .team-row {
+    grid-template-columns: 1fr;
+  }
+
+  .team-row .status-pill {
+    justify-self: start;
+    margin-left: 0;
+    margin-right: 0;
+    margin-top: 0.35rem;
+  }
+}

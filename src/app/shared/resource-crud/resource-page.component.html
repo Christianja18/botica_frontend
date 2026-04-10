@@ -1,4 +1,4 @@
-<section class="page-shell">
+<section class="page-shell" [attr.data-resource]="config().key">
   <header class="surface page-hero">
     <p class="page-kicker">Modulo CRUD</p>
     <h1 class="page-title">{{ config().title }}</h1>
@@ -39,7 +39,7 @@
   }
 
   @if (viewMode() === 'form') {
-    <article class="surface panel">
+    <article class="surface panel" [attr.data-resource]="config().key">
       <div class="panel-header">
         <div>
           <h2 class="panel-title">
@@ -49,11 +49,17 @@
         </div>
       </div>
 
-      <form [formGroup]="form" (ngSubmit)="save()">
-        <div class="form-grid">
+      <form class="resource-form" [attr.data-resource]="config().key" [formGroup]="form" (ngSubmit)="save()">
+        <div class="form-grid resource-form-grid">
           @for (field of config().fields; track field.key) {
             @if (!field.hiddenInForm) {
-              <label class="field" [class.checkbox-field]="field.type === 'checkbox'">
+              <label
+                class="field"
+                [class.checkbox-field]="field.type === 'checkbox'"
+                [attr.data-resource]="config().key"
+                [attr.data-field-key]="field.key"
+                [attr.data-field-type]="field.type"
+              >
                 @if (field.type === 'checkbox') {
                   <input class="field-control" type="checkbox" [formControlName]="field.key" />
                   <div>
@@ -137,7 +143,7 @@
       </form>
     </article>
   } @else {
-    <article class="surface panel">
+    <article class="surface panel" [attr.data-resource]="config().key">
       <div class="panel-header">
         <div>
           <h2 class="panel-title">Listado</h2>
@@ -151,7 +157,7 @@
       } @else if (!filteredItems().length) {
         <div class="empty-state">{{ config().emptyState }}</div>
       } @else {
-        <div class="table-wrap">
+        <div class="table-wrap" [attr.data-resource]="config().key">
           <table class="data-table">
             <thead>
               <tr>
@@ -168,14 +174,14 @@
                     <td>{{ formatValue(item, column) }}</td>
                   }
                   <td>
-                    <div class="button-row">
+                    <div class="button-row table-actions">
                       @if (pickerTarget() && pickerFieldParam()) {
-                        <button class="btn btn-primary" type="button" (click)="selectItemForPicker(item)">
+                        <button class="btn btn-primary table-action-btn" type="button" (click)="selectItemForPicker(item)">
                           Seleccionar
                         </button>
                       }
-                      <button class="btn btn-ghost" type="button" (click)="editItem(item)">Actualizar</button>
-                      <button class="btn btn-danger" type="button" (click)="deleteItem(item)">Eliminar</button>
+                      <button class="btn btn-ghost table-action-btn" type="button" (click)="editItem(item)">Actualizar</button>
+                      <button class="btn btn-danger table-action-btn" type="button" (click)="deleteItem(item)">Eliminar</button>
                     </div>
                   </td>
                 </tr>
@@ -227,16 +233,16 @@
   @if (activePickerField(); as pickerField) {
     <div class="picker-overlay" (click)="closePickerModal()">
       <article class="surface picker-modal" (click)="$event.stopPropagation()">
-        <div class="panel-header">
-          <div>
+        <div class="panel-header picker-header">
+          <div class="picker-header-body">
             <p class="page-kicker">Seleccion asistida</p>
             <h2 class="panel-title">Seleccionar {{ pickerField.label.toLowerCase() }}</h2>
             <p class="panel-subtitle">Elige un registro y se aplicara inmediatamente al formulario.</p>
           </div>
-          <button class="btn btn-secondary" type="button" (click)="closePickerModal()">Cerrar</button>
+          <button class="btn btn-secondary picker-close-btn" type="button" (click)="closePickerModal()">Cerrar</button>
         </div>
 
-        <div class="picker-toolbar">
+        <div class="picker-toolbar picker-section">
           <input
             class="search-input"
             type="search"
@@ -246,7 +252,7 @@
           />
         </div>
 
-        <div class="picker-list">
+        <div class="picker-list picker-section">
           @for (option of filteredPickerOptions(); track $index) {
             <button class="picker-card" type="button" (click)="selectLookupOption(option)">
               <strong>{{ lookupOptionLabel(pickerField.lookup!, option) }}</strong>

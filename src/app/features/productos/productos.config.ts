@@ -44,7 +44,6 @@ export const productosPageConfig: ResourcePageConfig = {
   fields: [
     { key: 'nombre', label: 'Nombre', type: 'text', required: true, maxLength: 200 },
     { key: 'codigoBarras', label: 'Codigo de barras', type: 'text', required: true, maxLength: 50 },
-    { key: 'descripcion', label: 'Descripcion', type: 'textarea', maxLength: 500 },
     {
       key: 'precioVenta',
       label: 'Precio de venta',
@@ -67,6 +66,13 @@ export const productosPageConfig: ResourcePageConfig = {
     },
     { key: 'idCategoria', label: 'Categoria', type: 'select', required: true, lookup: { resource: 'categorias', labelKey: 'nombre', valueKey: 'idCategoria' } },
     {
+      key: 'fechaVencimiento',
+      label: 'Fecha de vencimiento',
+      type: 'date',
+      minDate: 'today',
+      helpText: 'Selecciona una fecha de vencimiento igual o posterior a hoy.',
+    },
+    {
       key: 'idProveedor',
       label: 'Proveedor',
       type: 'select',
@@ -78,12 +84,6 @@ export const productosPageConfig: ResourcePageConfig = {
       helpText: 'Selecciona el proveedor desde una ventana asistida sin salir del formulario.',
     },
     { key: 'requiereReceta', label: 'Requiere receta', type: 'checkbox' },
-    {
-      key: 'fechaVencimiento',
-      label: 'Fecha de vencimiento',
-      type: 'date',
-      minDate: 'today',
-      helpText: 'Selecciona una fecha de vencimiento igual o posterior a hoy.',
-    },
+    { key: 'descripcion', label: 'Descripcion', type: 'textarea', maxLength: 500 },
   ],
 };
