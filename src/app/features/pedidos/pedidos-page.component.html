@@ -96,7 +96,7 @@
         </div>
 
         <div formArrayName="detalles" class="detail-stack">
-          @for (group of detailsArray.controls; track $index) {
+          @for (group of detailsArray.controls; track group) {
             <div class="detail-box" [formGroupName]="$index">
               <div class="detail-row">
                 <label class="field">
