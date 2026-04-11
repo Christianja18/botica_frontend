@@ -35,6 +35,7 @@ export interface ResourceFieldConfig {
   key: string;
   label: string;
   type: ResourceFieldType;
+  inputFilter?: 'lettersSpaces' | 'digits' | 'providerName';
   required?: boolean;
   requiredOnCreate?: boolean;
   requiredOnEdit?: boolean;

@@ -74,6 +74,7 @@
                     class="field-control textarea"
                     [class.field-control-readonly]="field.readonly"
                     [formControlName]="field.key"
+                    (input)="handleTextInput(field, $event)"
                     [attr.maxlength]="field.maxLength ?? null"
                     [readOnly]="field.readonly"
                   ></textarea>
@@ -113,6 +114,7 @@
                     [class.field-control-readonly]="field.readonly"
                     [type]="fieldInputType(field)"
                     [formControlName]="field.key"
+                    (input)="handleTextInput(field, $event); handleNumericInput(field, $event)"
                     [attr.maxlength]="field.maxLength ?? null"
                     [step]="field.step ?? null"
                     [min]="field.min ?? null"

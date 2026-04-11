@@ -1,16 +1,16 @@
 :root {
   --font-heading: "Bahnschrift", "Trebuchet MS", sans-serif;
   --font-body: "Segoe UI Variable", "Segoe UI", "Trebuchet MS", sans-serif;
-  --bg-panel: rgba(255, 250, 242, 0.88);
-  --bg-panel-strong: #fffaf4;
+  --bg-panel: rgba(251, 253, 255, 0.88);
+  --bg-panel-strong: #fdfefe;
   --text-main: #172228;
   --text-muted: #5a6a71;
-  --border-soft: rgba(18, 52, 59, 0.12);
-  --shadow-soft: 0 24px 60px rgba(18, 52, 59, 0.12);
-  --accent-primary: #127475;
-  --accent-primary-strong: #0c5b5d;
-  --accent-secondary: #f4a259;
-  --accent-danger: #c94f4f;
+  --border-soft: rgba(33, 78, 165, 0.12);
+  --shadow-soft: 0 24px 60px rgba(33, 78, 165, 0.1);
+  --accent-primary: #214ea5;
+  --accent-primary-strong: #173777;
+  --accent-secondary: #67d3c4;
+  --accent-danger: #d44532;
   --radius-xl: 28px;
   --radius-lg: 20px;
   --radius-md: 14px;
@@ -39,9 +39,10 @@ body {
   color: var(--text-main);
   overflow-x: hidden;
   background:
-    radial-gradient(circle at top left, rgba(18, 116, 117, 0.18), transparent 35%),
-    radial-gradient(circle at right 15%, rgba(244, 162, 89, 0.22), transparent 32%),
-    linear-gradient(180deg, #fffaf1 0%, #f3efe7 55%, #eef3f0 100%);
+    radial-gradient(circle at top left, rgba(103, 211, 196, 0.24), transparent 34%),
+    radial-gradient(circle at right 18%, rgba(33, 78, 165, 0.16), transparent 28%),
+    radial-gradient(circle at center, rgba(212, 248, 241, 0.32), transparent 42%),
+    linear-gradient(180deg, #f8fffe 0%, #f3fafb 48%, #eef3fb 100%);
 }
 
 html,
@@ -172,18 +173,18 @@ a {
 }
 
 .btn-secondary {
-  color: var(--text-main);
-  background: #ead7bd;
+  color: var(--accent-primary-strong);
+  background: linear-gradient(135deg, rgba(103, 211, 196, 0.24), rgba(237, 251, 249, 0.96));
 }
 
 .btn-ghost {
   color: var(--accent-primary-strong);
-  background: rgba(18, 116, 117, 0.08);
+  background: rgba(103, 211, 196, 0.14);
 }
 
 .btn-danger {
   color: #fff;
-  background: linear-gradient(135deg, #d15f5f, #b53f3f);
+  background: linear-gradient(135deg, #de5a48, #c83d30);
 }
 
 .page-shell {
@@ -683,7 +684,7 @@ a {
 .detail-box {
   padding: 1rem;
   border-radius: var(--radius-md);
-  background: rgba(18, 116, 117, 0.05);
+  background: rgba(103, 211, 196, 0.09);
 }
 
 .text-right {

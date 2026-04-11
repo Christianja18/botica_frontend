@@ -58,7 +58,7 @@ export function fieldErrorMessage(field: ResourceFieldConfig, control: AbstractC
   }
 
   if (control.hasError('email')) {
-    return 'Ingresa un correo valido.';
+    return 'Usa la estructura usuario@organizacion.dominio.';
   }
 
   if (control.hasError('minlength')) {
@@ -80,6 +80,10 @@ export function fieldErrorMessage(field: ResourceFieldConfig, control: AbstractC
   }
 
   if (control.hasError('pattern')) {
+    if (field.type === 'email') {
+      return 'Usa la estructura usuario@organizacion.dominio.';
+    }
+
     return `El formato de ${field.label.toLowerCase()} no es valido.`;
   }
 

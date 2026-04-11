@@ -315,6 +315,65 @@ export class ResourcePageComponent implements OnInit, OnDestroy {
     return field.type === 'currency' ? 'number' : field.type;
   }
 
+  handleTextInput(field: ResourceFieldConfig, event: Event): void {
+    const filter = field.inputFilter;
+    if (!filter) {
+      return;
+    }
+
+    const input = event.target as HTMLInputElement | HTMLTextAreaElement | null;
+    const control = this.form.controls[field.key];
+    if (!input || !control) {
+      return;
+    }
+
+    const rawValue = input.value ?? '';
+    const sanitizedValue = this.sanitizeInputValue(rawValue, filter);
+    if (sanitizedValue === rawValue) {
+      return;
+    }
+
+    input.value = sanitizedValue;
+    control.setValue(sanitizedValue as unknown, { emitEvent: false });
+    control.markAsDirty();
+    control.markAsTouched();
+    control.updateValueAndValidity({ emitEvent: false });
+  }
+
+  handleNumericInput(field: ResourceFieldConfig, event: Event): void {
+    if (field.type !== 'number' && field.type !== 'currency') {
+      return;
+    }
+
+    const input = event.target as HTMLInputElement | null;
+    const control = this.form.controls[field.key];
+    if (!input || !control) {
+      return;
+    }
+
+    const rawValue = input.value ?? '';
+    if (!rawValue.includes('-')) {
+      return;
+    }
+
+    const sanitizedValue = rawValue.replace(/-/g, '');
+    input.value = sanitizedValue;
+
+    if (sanitizedValue === '') {
+      control.setValue('' as unknown, { emitEvent: false });
+      control.markAsDirty();
+      control.markAsTouched();
+      control.updateValueAndValidity({ emitEvent: false });
+      return;
+    }
+
+    const numericValue = Number(sanitizedValue);
+    control.setValue((Number.isFinite(numericValue) ? numericValue : sanitizedValue) as unknown, { emitEvent: false });
+    control.markAsDirty();
+    control.markAsTouched();
+    control.updateValueAndValidity({ emitEvent: false });
+  }
+
   fieldMinDate(field: ResourceFieldConfig): string | null {
     return field.type !== 'date' ? null : resolveResourceDateBound(field.minDate, this.todayIso);
   }
@@ -757,6 +816,19 @@ export class ResourcePageComponent implements OnInit, OnDestroy {
     const value = locked ? 'hidden' : '';
     this.document.body.style.overflow = value;
     this.document.documentElement.style.overflow = value;
+  }
+
+  private sanitizeInputValue(value: string, filter: NonNullable<ResourceFieldConfig['inputFilter']>): string {
+    switch (filter) {
+      case 'digits':
+        return value.replace(/\D+/g, '');
+      case 'lettersSpaces':
+        return value.replace(/[^A-Za-zÁÉÍÓÚáéíóúÑñ ]+/g, '').replace(/\s{2,}/g, ' ');
+      case 'providerName':
+        return value.replace(/[^A-Za-zÁÉÍÓÚáéíóúÑñ., ]+/g, '').replace(/\s{2,}/g, ' ');
+      default:
+        return value;
+    }
   }
 
   private startActionLoading(message: string): void {

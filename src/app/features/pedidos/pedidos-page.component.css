@@ -235,10 +235,32 @@
   color: #be185d;
 }
 
+.picker-badge.out-of-stock {
+  background: rgba(107, 114, 128, 0.16);
+  color: #374151;
+}
+
+.picker-card-disabled {
+  opacity: 0.62;
+  cursor: not-allowed;
+  border-color: rgba(148, 163, 184, 0.2);
+  box-shadow: none;
+}
+
+.picker-card-disabled:hover {
+  transform: none;
+  border-color: rgba(148, 163, 184, 0.2);
+  box-shadow: none;
+}
+
 .field-warning {
   margin: 0.75rem 0 0;
   color: #b45309;
   font-weight: 600;
+}
+
+.field-warning-limit {
+  color: #c2410c;
 }
 
 .saving-overlay {

@@ -1,3 +1,8 @@
 <section class="crud-page">
-  <app-resource-page [config]="config" [resourceService]="resourceService" [refreshVersion]="refreshVersion()" />
+  <app-resource-page
+    [config]="config"
+    [resourceService]="resourceService"
+    [refreshVersion]="refreshVersion()"
+    (saved)="notifyInventorySaved()"
+  />
 </section>

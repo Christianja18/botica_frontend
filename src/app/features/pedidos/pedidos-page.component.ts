@@ -1,5 +1,5 @@
 import { CommonModule, CurrencyPipe, DOCUMENT } from '@angular/common';
-import { Component, computed, DestroyRef, HostListener, inject, OnDestroy, signal } from '@angular/core';
+import { Component, computed, DestroyRef, effect, HostListener, inject, OnDestroy, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormArray, FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -96,6 +96,8 @@ export class PedidosPageComponent implements OnDestroy {
   private pendingSuccessMessage: string | null = null;
   private successMessageTimeoutId: number | null = null;
   readonly pageSizeOptions = [5, 10, 15, 20, 50];
+  private handledStockVersion = 0;
+  readonly orderBusinessWarnings = signal<string[]>([]);
 
   readonly pedidoForm = new FormGroup({
     idCliente: new FormControl<number | null>(null),
@@ -152,10 +154,20 @@ export class PedidosPageComponent implements OnDestroy {
       'Cambiar a cancelado revertira stock.',
     ];
   });
-  readonly orderBusinessWarnings = computed(() => this.collectCompletionIssues());
-
   constructor() {
     this.addDetail();
+    effect(() => {
+      const version = this.stockRefresh.version();
+      if (!version || version === this.handledStockVersion) {
+        return;
+      }
+
+      this.handledStockVersion = version;
+      this.refreshProductAvailability();
+    });
+    this.pedidoForm.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
+      this.refreshOrderBusinessWarnings();
+    });
     this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
       const view = params.get('vista') === 'formulario' ? 'form' : 'list';
       const rawEditId = params.get('editar');
@@ -258,6 +270,7 @@ export class PedidosPageComponent implements OnDestroy {
 
     this.syncDetailSubtotal(detailGroup);
     this.detailsArray.push(detailGroup);
+    this.refreshOrderBusinessWarnings();
   }
 
   removeDetail(index: number): void {
@@ -265,6 +278,7 @@ export class PedidosPageComponent implements OnDestroy {
       return;
     }
     this.detailsArray.removeAt(index);
+    this.refreshOrderBusinessWarnings();
   }
 
   productChanged(index: number): void {
@@ -285,6 +299,16 @@ export class PedidosPageComponent implements OnDestroy {
   detailSubtotal(index: number): number {
     const group = this.detailsArray.at(index);
     return Number(group.get('subtotal')?.value ?? 0);
+  }
+
+  detailMaxQuantity(index: number): number | null {
+    const detailGroup = this.detailsArray.at(index);
+    const productId = Number(detailGroup?.controls.idProducto.value ?? 0);
+    if (!productId) {
+      return null;
+    }
+
+    return this.maximumQuantityForDetail(detailGroup, productId);
   }
 
   saveOrder(): void {
@@ -378,6 +402,7 @@ export class PedidosPageComponent implements OnDestroy {
     this.detailsArray.clear();
     this.addDetail();
     this.closePicker();
+    this.refreshOrderBusinessWarnings();
   }
 
   openCreateView(): void {
@@ -431,6 +456,7 @@ export class PedidosPageComponent implements OnDestroy {
       queryParamsHandling: 'merge',
     });
     this.closePicker();
+    this.refreshOrderBusinessWarnings();
   }
 
   clientLabel(idCliente: number | null | undefined): string {
@@ -505,8 +531,32 @@ export class PedidosPageComponent implements OnDestroy {
     return null;
   }
 
+  detailQuantityLimitWarning(index: number): string | null {
+    const detailGroup = this.detailsArray.at(index);
+    const productId = Number(detailGroup?.controls.idProducto.value ?? 0);
+    if (!productId) {
+      return null;
+    }
+
+    const maxQuantity = this.maximumQuantityForDetail(detailGroup, productId);
+    if (maxQuantity <= 0) {
+      return 'Limite de stock: 0.';
+    }
+
+    const quantity = Number(detailGroup.controls.cantidad.value ?? 0);
+    if (quantity >= maxQuantity) {
+      return `Limite de stock: ${maxQuantity}.`;
+    }
+
+    return null;
+  }
+
   productPickerBadges(product: ProductoDTO): string[] {
     const badges: string[] = [];
+
+    if (product.idProducto && this.isProductOutOfStock(product.idProducto)) {
+      badges.push('Sin stock');
+    }
 
     if (this.isProductExpired(product)) {
       badges.push('Vencido');
@@ -530,6 +580,10 @@ export class PedidosPageComponent implements OnDestroy {
     }
 
     return `Stock ${inventory.stockActual} · Minimo ${inventory.stockMinimo}`;
+  }
+
+  isProductOutOfStock(productId: number | null | undefined): boolean {
+    return this.availableStock(productId) <= 0;
   }
 
   closePicker(): void {
@@ -708,15 +762,17 @@ export class PedidosPageComponent implements OnDestroy {
           subtotal: Number(detail.subtotal ?? 0),
         });
       }
+      this.refreshOrderBusinessWarnings();
       return;
     }
 
     this.addDetail();
+    this.refreshOrderBusinessWarnings();
   }
 
   private syncDetailSubtotal(detailGroup: DetailFormGroup): void {
     const updateSubtotal = () => {
-      const quantity = Number(detailGroup.controls.cantidad.value ?? 0);
+      const quantity = this.normalizeDetailQuantity(detailGroup, Number(detailGroup.controls.cantidad.value ?? 0));
       const price = Number(detailGroup.controls.precioUnitario.value ?? 0);
       const subtotal = quantity * price;
       detailGroup.controls.subtotal.setValue(subtotal, { emitEvent: false });
@@ -728,10 +784,20 @@ export class PedidosPageComponent implements OnDestroy {
   }
 
   private applyProductSelection(detailGroup: DetailFormGroup, product: ProductoDTO): void {
+    const previousProductId = Number(detailGroup.controls.idProducto.value ?? 0);
+    const nextProductId = Number(product.idProducto ?? 0);
+    const changedProduct = previousProductId !== nextProductId;
+
     detailGroup.controls.idProducto.setValue(product.idProducto ?? null, { emitEvent: false });
+    if (changedProduct) {
+      detailGroup.controls.cantidad.setValue(1);
+      detailGroup.controls.cantidad.markAsDirty();
+      detailGroup.controls.cantidad.markAsTouched();
+    }
     detailGroup.controls.precioUnitario.setValue(Number(product.precioVenta ?? 0));
     detailGroup.controls.precioUnitario.markAsDirty();
     detailGroup.controls.precioUnitario.markAsTouched();
+    this.normalizeDetailQuantity(detailGroup, Number(detailGroup.controls.cantidad.value ?? 1));
   }
 
   private collectCompletionIssues(): string[] {
@@ -764,6 +830,10 @@ export class PedidosPageComponent implements OnDestroy {
     }
 
     return [...new Set(issues)];
+  }
+
+  private refreshOrderBusinessWarnings(): void {
+    this.orderBusinessWarnings.set(this.collectCompletionIssues());
   }
 
   private productById(productId: number | null | undefined): ProductoDTO | undefined {
@@ -815,6 +885,21 @@ export class PedidosPageComponent implements OnDestroy {
     );
   }
 
+  private currentDraftQuantityExcluding(productId: number, detailGroup: DetailFormGroup): number {
+    return this.detailsArray.controls.reduce((total, group) => {
+      if (group === detailGroup) {
+        return total;
+      }
+
+      const currentProductId = Number(group.controls.idProducto.value ?? 0);
+      if (currentProductId !== productId) {
+        return total;
+      }
+
+      return total + Number(group.controls.cantidad.value ?? 0);
+    }, 0);
+  }
+
   private originalCommittedQuantity(productId: number): number {
     const originalOrder = this.originalOrder();
     if (originalOrder?.estado !== 'completado') {
@@ -840,6 +925,50 @@ export class PedidosPageComponent implements OnDestroy {
     const value = locked ? 'hidden' : '';
     this.document.body.style.overflow = value;
     this.document.documentElement.style.overflow = value;
+  }
+
+  private maximumQuantityForDetail(detailGroup: DetailFormGroup, productId: number): number {
+    const available = this.availableStock(productId);
+    const originalCommitted = this.originalCommittedQuantity(productId);
+    const usedByOtherDraftRows = this.currentDraftQuantityExcluding(productId, detailGroup);
+    return Math.max(1, available + originalCommitted - usedByOtherDraftRows);
+  }
+
+  private normalizeDetailQuantity(detailGroup: DetailFormGroup, rawQuantity: number): number {
+    const productId = Number(detailGroup.controls.idProducto.value ?? 0);
+    const minimum = 1;
+    const maximum = productId ? this.maximumQuantityForDetail(detailGroup, productId) : Number.POSITIVE_INFINITY;
+
+    let normalized = Number.isFinite(rawQuantity) ? rawQuantity : minimum;
+    normalized = Math.trunc(normalized);
+    normalized = Math.max(minimum, normalized);
+
+    if (Number.isFinite(maximum)) {
+      normalized = Math.min(normalized, maximum);
+    }
+
+    if (normalized !== Number(detailGroup.controls.cantidad.value ?? 0)) {
+      detailGroup.controls.cantidad.setValue(normalized, { emitEvent: false });
+    }
+
+    this.refreshOrderBusinessWarnings();
+    return normalized;
+  }
+
+  private refreshProductAvailability(): void {
+    forkJoin({
+      inventario: this.inventarioService.list(),
+      productos: this.productosService.list(),
+    }).subscribe({
+      next: (response) => {
+        this.inventario.set(response.inventario);
+        this.productos.set(response.productos);
+        this.refreshOrderBusinessWarnings();
+      },
+      error: () => {
+        // Keep the current draft intact if the background refresh fails.
+      },
+    });
   }
 
   private startActionLoading(message: string): void {

@@ -109,7 +109,14 @@
                 </label>
                 <label class="field detail-field">
                   <span class="field-label">Cantidad</span>
-                  <input class="field-control" type="number" min="1" formControlName="cantidad" />
+                  <input
+                    class="field-control"
+                    type="number"
+                    min="1"
+                    [attr.max]="detailMaxQuantity($index)"
+                    step="1"
+                    formControlName="cantidad"
+                  />
                   <div class="field-picker-row field-picker-row-placeholder" aria-hidden="true"></div>
                 </label>
                 <label class="field detail-field">
@@ -134,6 +141,9 @@
               </div>
               @if (detailBusinessWarning($index); as detailWarning) {
                 <p class="field-warning">{{ detailWarning }}</p>
+              }
+              @if (detailQuantityLimitWarning($index); as stockLimitWarning) {
+                <p class="field-warning field-warning-limit">{{ stockLimitWarning }}</p>
               }
               <div class="form-actions">
                 <button class="btn btn-secondary" type="button" (click)="removeDetail($index)">Quitar item</button>
@@ -320,7 +330,13 @@
 
           @if (activePicker() === 'producto') {
             @for (producto of filteredProductos(); track producto.idProducto) {
-              <button class="picker-card" type="button" (click)="pickProduct(producto)">
+              <button
+                class="picker-card"
+                [class.picker-card-disabled]="isProductOutOfStock(producto.idProducto)"
+                type="button"
+                [disabled]="isProductOutOfStock(producto.idProducto)"
+                (click)="pickProduct(producto)"
+              >
                 <strong>{{ producto.nombre }}</strong>
                 <span>{{ producto.codigoBarras }}</span>
                 <span>{{ producto.precioVenta | currency: 'PEN':'symbol':'1.2-2' }}</span>
@@ -331,6 +347,7 @@
                     @for (badge of productPickerBadges(producto); track badge) {
                       <span
                         class="picker-badge"
+                        [class.out-of-stock]="badge === 'Sin stock'"
                         [class.expired]="badge === 'Vencido'"
                         [class.expiring]="badge === 'Por vencer'"
                         [class.low-stock]="badge === 'Stock bajo'"

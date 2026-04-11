@@ -17,4 +17,8 @@ export class InventarioPageComponent {
   readonly resourceService = inject(InventarioService);
   readonly config = inventarioPageConfig;
   readonly refreshVersion = computed(() => this.stockRefresh.version());
+
+  notifyInventorySaved(): void {
+    this.stockRefresh.notifyStockChanged();
+  }
 }
