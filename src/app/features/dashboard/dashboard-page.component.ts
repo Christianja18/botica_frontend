@@ -1,8 +1,8 @@
 import { CommonModule, CurrencyPipe } from '@angular/common';
 import { Component, computed, effect, inject, Injector, signal } from '@angular/core';
-import { forkJoin } from 'rxjs';
+import { forkJoin, of } from 'rxjs';
 
-import { resolveApiError, StockRefreshService } from '../../core/services';
+import { AuthService, resolveApiError, StockRefreshService } from '../../core/services';
 import { ClientesService } from '../clientes/services';
 import { ClienteDTO as ClienteModelDTO } from '../clientes/models';
 import { PedidosService } from '../pedidos/services';
@@ -20,11 +20,13 @@ import { UsuarioDTO as UsuarioModelDTO } from '../usuarios/models';
 
 @Component({
   selector: 'app-dashboard-page',
+  standalone: true,
   imports: [CommonModule, CurrencyPipe],
   templateUrl: './dashboard-page.component.html',
   styleUrl: './dashboard-page.component.css',
 })
 export class DashboardPageComponent {
+  private readonly auth = inject(AuthService);
   private readonly clientesService = inject(ClientesService);
   private readonly injector = inject(Injector);
   private readonly pedidosService = inject(PedidosService);
@@ -34,6 +36,13 @@ export class DashboardPageComponent {
   private readonly usuariosService = inject(UsuariosService);
   private readonly currentYear = new Date().getFullYear();
   private handledStockRefreshVersion = 0;
+  readonly canViewVentas = this.auth.hasPermission('puedeVender');
+  readonly canViewInventario = this.auth.hasPermission('puedeAdministrarInventario');
+  readonly canViewReportes = this.auth.hasPermission('puedeVerReportes');
+  readonly canViewUsuarios = this.auth.hasPermission('puedeAdministrarUsuarios');
+  readonly hasDashboardModules = computed(
+    () => this.canViewVentas || this.canViewInventario || this.canViewReportes || this.canViewUsuarios,
+  );
 
   readonly loading = signal(true);
   readonly errorMessage = signal<string | null>(null);
@@ -75,7 +84,7 @@ export class DashboardPageComponent {
         this.handledStockRefreshVersion = version;
         this.loadDashboard();
       },
-      { injector: this.injector, allowSignalWrites: true },
+      { injector: this.injector },
     );
     this.loadDashboard();
   }
@@ -85,15 +94,23 @@ export class DashboardPageComponent {
     this.errorMessage.set(null);
 
     forkJoin({
-      productos: this.productosService.list(),
-      pedidos: this.pedidosService.list(),
-      clientes: this.clientesService.list(),
-      usuarios: this.usuariosService.list(),
-      inventarioBajo: this.reportesService.getInventarioBajo(),
-      porVencer: this.reportesService.getProductosPorVencer(),
-      vencidos: this.reportesService.getProductosVencidos(),
-      ventas: this.reportesService.getVentasPorMes(this.currentYear),
-      ganancias: this.reportesService.getGananciasPorMes(this.currentYear),
+      productos: this.canViewInventario ? this.productosService.list() : of([] as ProductoModelDTO[]),
+      pedidos: this.canViewVentas ? this.pedidosService.list() : of([] as PedidoModelDTO[]),
+      clientes: this.canViewVentas ? this.clientesService.list() : of([] as ClienteModelDTO[]),
+      usuarios: this.canViewUsuarios ? this.usuariosService.list() : of([] as UsuarioModelDTO[]),
+      inventarioBajo: this.canViewReportes
+        ? this.reportesService.getInventarioBajo()
+        : of([] as InventoryAlertModel[]),
+      porVencer: this.canViewReportes
+        ? this.reportesService.getProductosPorVencer()
+        : of([] as ExpiringProductModel[]),
+      vencidos: this.canViewReportes ? this.reportesService.getProductosVencidos() : of([] as ExpiringProductModel[]),
+      ventas: this.canViewReportes
+        ? this.reportesService.getVentasPorMes(this.currentYear)
+        : of([] as MonthlyMetricModel[]),
+      ganancias: this.canViewReportes
+        ? this.reportesService.getGananciasPorMes(this.currentYear)
+        : of([] as MonthlyMetricModel[]),
     }).subscribe({
       next: (response) => {
         this.productos.set(response.productos);

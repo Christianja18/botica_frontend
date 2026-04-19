@@ -3,6 +3,17 @@
   min-height: 100dvh;
 }
 
+.required-indicator {
+  margin-left: 0.22rem;
+  color: #dc2626;
+  font-weight: 800;
+}
+
+.field-control-invalid {
+  border-color: rgba(220, 38, 38, 0.72);
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.12);
+}
+
 .login-layout {
   display: grid;
   grid-template-columns: minmax(0, 1.1fr) minmax(360px, 430px);

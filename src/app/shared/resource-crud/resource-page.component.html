@@ -34,7 +34,7 @@
               [attr.aria-label]="'Exportar en ' + selectedTransferLabel()"
               [attr.title]="'Exportar en ' + selectedTransferLabel()"
             >
-              <span class="btn-icon-glyph btn-icon-next" aria-hidden="true"></span>
+              <span class="btn-icon-glyph btn-icon-export" aria-hidden="true"></span>
               <span class="sr-only">Exportar en {{ selectedTransferLabel() }}</span>
             </button>
             <button
@@ -44,7 +44,7 @@
               [attr.aria-label]="'Importar en ' + selectedTransferLabel()"
               [attr.title]="'Importar en ' + selectedTransferLabel()"
             >
-              <span class="btn-icon-glyph btn-icon-save" aria-hidden="true"></span>
+              <span class="btn-icon-glyph btn-icon-import" aria-hidden="true"></span>
               <span class="sr-only">Importar en {{ selectedTransferLabel() }}</span>
             </button>
             <input
@@ -132,15 +132,26 @@
                 @if (field.type === 'checkbox') {
                   <input class="field-control" type="checkbox" [formControlName]="field.key" />
                   <div>
-                    <span class="field-label">{{ field.label }}</span>
+                    <span class="field-label">
+                      {{ field.label }}
+                      @if (isFieldRequired(field)) {
+                        <span class="required-indicator" aria-hidden="true">*</span>
+                      }
+                    </span>
                     @if (field.helpText) {
                       <div class="field-help">{{ field.helpText }}</div>
                     }
                   </div>
                 } @else if (field.type === 'textarea') {
-                  <span class="field-label">{{ field.label }}</span>
+                  <span class="field-label">
+                    {{ field.label }}
+                    @if (isFieldRequired(field)) {
+                      <span class="required-indicator" aria-hidden="true">*</span>
+                    }
+                  </span>
                   <textarea
                     class="field-control textarea"
+                    [class.field-control-invalid]="controlInvalid(field.key)"
                     [class.field-control-readonly]="field.readonly"
                     [formControlName]="field.key"
                     (input)="handleTextInput(field, $event)"
@@ -148,11 +159,17 @@
                     [readOnly]="field.readonly"
                   ></textarea>
                 } @else if (field.type === 'select') {
-                  <span class="field-label">{{ field.label }}</span>
+                  <span class="field-label">
+                    {{ field.label }}
+                    @if (isFieldRequired(field)) {
+                      <span class="required-indicator" aria-hidden="true">*</span>
+                    }
+                  </span>
                   @if (field.pickerOnly) {
                     <div class="field-inline-picker">
                       <input
                         class="field-control field-control-readonly"
+                        [class.field-control-invalid]="controlInvalid(field.key)"
                         type="text"
                         [value]="pickerDisplayValue(field)"
                         readonly
@@ -172,7 +189,7 @@
                     </div>
                   } @else {
                     <div class="field-inline-picker" [class.field-inline-picker-single]="!(field.pickerRoute || field.pickerMode === 'modal')">
-                      <select class="field-control" [formControlName]="field.key">
+                      <select class="field-control" [class.field-control-invalid]="controlInvalid(field.key)" [formControlName]="field.key">
                         <option value="">Selecciona una opcion</option>
                         @for (option of lookupOptions()[field.lookup!.resource]; track $index) {
                           <option [value]="option[field.lookup!.valueKey]">{{ lookupOptionLabel(field.lookup!, option) }}</option>
@@ -195,9 +212,15 @@
                     </div>
                   }
                 } @else {
-                  <span class="field-label">{{ field.label }}</span>
+                  <span class="field-label">
+                    {{ field.label }}
+                    @if (isFieldRequired(field)) {
+                      <span class="required-indicator" aria-hidden="true">*</span>
+                    }
+                  </span>
                   <input
                     class="field-control"
+                    [class.field-control-invalid]="controlInvalid(field.key)"
                     [class.field-control-readonly]="field.readonly"
                     [type]="fieldInputType(field)"
                     [formControlName]="field.key"

@@ -59,6 +59,34 @@ export class AuthService {
     return !!this.sessionSignal()?.user.permissions[permission];
   }
 
+  preferredRoute(): string {
+    const permissions = this.sessionSignal()?.user.permissions;
+    if (!permissions) {
+      return '/login';
+    }
+
+    const enabled = (Object.entries(permissions) as Array<[PermissionKey, boolean]>)
+      .filter(([, allowed]) => allowed)
+      .map(([permission]) => permission);
+
+    if (enabled.length !== 1) {
+      return '/dashboard';
+    }
+
+    switch (enabled[0]) {
+      case 'puedeVender':
+        return '/pedidos';
+      case 'puedeAdministrarInventario':
+        return '/inventario';
+      case 'puedeVerReportes':
+        return '/reportes';
+      case 'puedeAdministrarUsuarios':
+        return '/usuarios';
+      default:
+        return '/dashboard';
+    }
+  }
+
   private hydrateSession(): AuthSession | null {
     const raw = this.storage.getItem(appSettings.authStorageKey);
     if (!raw) {

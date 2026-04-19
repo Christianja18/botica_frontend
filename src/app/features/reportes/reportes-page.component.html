@@ -85,27 +85,34 @@
         <form class="report-form" [formGroup]="salesForm" (ngSubmit)="createSalesReport()">
           <div class="form-grid report-form-grid">
             <label class="field">
-              <span class="field-label">Fecha inicio</span>
-              <input class="field-control" type="date" formControlName="fechaInicio" [max]="todayIso" />
-              @if (salesForm.controls.fechaInicio.touched && salesForm.controls.fechaInicio.hasError('maxIsoDate')) {
+              <span class="field-label">Fecha inicio <span class="required-indicator" aria-hidden="true">*</span></span>
+              <input class="field-control" [class.field-control-invalid]="salesControlInvalid('fechaInicio')" type="date" formControlName="fechaInicio" [max]="todayIso" />
+              @if (salesControlInvalid('fechaInicio') && salesForm.controls.fechaInicio.hasError('required')) {
+                <span class="field-error">Completa el campo fecha inicio.</span>
+              } @else if (salesControlInvalid('fechaInicio') && salesForm.controls.fechaInicio.hasError('maxIsoDate')) {
                 <span class="field-error">La fecha inicio no puede ser posterior a hoy.</span>
               }
             </label>
             <label class="field">
-              <span class="field-label">Fecha fin</span>
-              <input class="field-control" type="date" formControlName="fechaFin" [max]="todayIso" />
-              @if (salesForm.controls.fechaFin.touched && salesForm.controls.fechaFin.hasError('maxIsoDate')) {
+              <span class="field-label">Fecha fin <span class="required-indicator" aria-hidden="true">*</span></span>
+              <input class="field-control" [class.field-control-invalid]="salesControlInvalid('fechaFin')" type="date" formControlName="fechaFin" [max]="todayIso" />
+              @if (salesControlInvalid('fechaFin') && salesForm.controls.fechaFin.hasError('required')) {
+                <span class="field-error">Completa el campo fecha fin.</span>
+              } @else if (salesControlInvalid('fechaFin') && salesForm.controls.fechaFin.hasError('maxIsoDate')) {
                 <span class="field-error">La fecha fin no puede ser posterior a hoy.</span>
               }
             </label>
             <label class="field">
-              <span class="field-label">Generado por</span>
-              <select class="field-control" formControlName="idUsuario">
+              <span class="field-label">Generado por <span class="required-indicator" aria-hidden="true">*</span></span>
+              <select class="field-control" [class.field-control-invalid]="salesControlInvalid('idUsuario')" formControlName="idUsuario">
                 <option [ngValue]="null">Selecciona un usuario</option>
                 @for (usuario of usuarios(); track usuario.idUsuario) {
                   <option [ngValue]="usuario.idUsuario">{{ usuario.nombre }} {{ usuario.apellido }}</option>
                 }
               </select>
+              @if (salesControlInvalid('idUsuario')) {
+                <span class="field-error">Completa el campo generado por.</span>
+              }
             </label>
           </div>
           <div class="form-actions report-actions">
@@ -134,13 +141,16 @@
         <form class="report-form" [formGroup]="inventoryForm" (ngSubmit)="createInventoryReport()">
           <div class="form-grid report-form-grid report-form-grid-single">
             <label class="field">
-              <span class="field-label">Generado por</span>
-              <select class="field-control" formControlName="idUsuario">
+              <span class="field-label">Generado por <span class="required-indicator" aria-hidden="true">*</span></span>
+              <select class="field-control" [class.field-control-invalid]="inventoryControlInvalid()" formControlName="idUsuario">
                 <option [ngValue]="null">Selecciona un usuario</option>
                 @for (usuario of usuarios(); track usuario.idUsuario) {
                   <option [ngValue]="usuario.idUsuario">{{ usuario.nombre }} {{ usuario.apellido }}</option>
                 }
               </select>
+              @if (inventoryControlInvalid()) {
+                <span class="field-error">Completa el campo generado por.</span>
+              }
             </label>
           </div>
           <div class="form-actions report-actions">
@@ -281,19 +291,22 @@
         </label>
         @if (yearRequired()) {
           <label class="pagination-size year-field">
-            <span>Anio</span>
+            <span>Anio <span class="required-indicator" aria-hidden="true">*</span></span>
             <input
               class="field-control summary-year-input"
+              [class.field-control-invalid]="summaryYearInvalid()"
               type="number"
               min="2000"
               max="2100"
               [ngModel]="selectedYear()"
               [ngModelOptions]="{ standalone: true }"
-              (ngModelChange)="selectedYear.set(+$event)"
+              (change)="updateSummaryYear($any($event.target).value)"
             />
+            @if (summaryYearInvalid()) {
+              <span class="field-error">Completa un anio valido.</span>
+            }
           </label>
         }
-        <button class="btn btn-secondary" type="button" (click)="applySummaryFilters()">Aplicar</button>
       </div>
     </div>
   </section>

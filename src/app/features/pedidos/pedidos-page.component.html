@@ -109,9 +109,15 @@
             </div>
           </label>
           <label class="field field-with-action order-summary-field">
-            <span class="field-label">Usuario</span>
+            <span class="field-label">Usuario <span class="required-indicator" aria-hidden="true">*</span></span>
             <div class="field-inline-picker">
-              <input class="field-control field-control-readonly" type="text" [value]="selectedUserLabel()" readonly />
+              <input
+                class="field-control field-control-readonly"
+                [class.field-control-invalid]="fieldInvalid(pedidoForm.controls.idUsuario)"
+                type="text"
+                [value]="selectedUserLabel()"
+                readonly
+              />
               <div class="field-picker-row">
                 <button
                   class="btn btn-ghost btn-icon-only"
@@ -125,15 +131,21 @@
                 </button>
               </div>
             </div>
+            @if (fieldInvalid(pedidoForm.controls.idUsuario)) {
+              <span class="field-error">{{ fieldRequiredMessage('usuario') }}</span>
+            }
           </label>
           <label class="field order-summary-field">
-            <span class="field-label">Estado</span>
-            <select class="field-control" formControlName="estado">
+            <span class="field-label">Estado <span class="required-indicator" aria-hidden="true">*</span></span>
+            <select class="field-control" [class.field-control-invalid]="fieldInvalid(pedidoForm.controls.estado)" formControlName="estado">
               <option value="pendiente">Pendiente</option>
               <option value="completado">Completado</option>
               <option value="cancelado">Cancelado</option>
             </select>
             <div class="field-picker-row field-picker-row-placeholder" aria-hidden="true"></div>
+            @if (fieldInvalid(pedidoForm.controls.estado)) {
+              <span class="field-error">{{ fieldRequiredMessage('estado') }}</span>
+            }
           </label>
         </div>
 
@@ -150,9 +162,15 @@
             <div class="detail-box" [formGroupName]="$index">
               <div class="detail-row">
                 <label class="field field-with-action detail-field detail-field-product">
-                  <span class="field-label">Producto</span>
+                  <span class="field-label">Producto <span class="required-indicator" aria-hidden="true">*</span></span>
                   <div class="field-inline-picker">
-                    <input class="field-control field-control-readonly" type="text" [value]="selectedProductLabel($index)" readonly />
+                    <input
+                      class="field-control field-control-readonly"
+                      [class.field-control-invalid]="fieldInvalid(group.controls.idProducto)"
+                      type="text"
+                      [value]="selectedProductLabel($index)"
+                      readonly
+                    />
                     <div class="field-picker-row">
                       <button
                         class="btn btn-ghost btn-icon-only"
@@ -166,11 +184,15 @@
                       </button>
                     </div>
                   </div>
+                  @if (fieldInvalid(group.controls.idProducto)) {
+                    <span class="field-error">{{ fieldRequiredMessage('producto') }}</span>
+                  }
                 </label>
                 <label class="field detail-field">
-                  <span class="field-label">Cantidad</span>
+                  <span class="field-label">Cantidad <span class="required-indicator" aria-hidden="true">*</span></span>
                   <input
                     class="field-control"
+                    [class.field-control-invalid]="fieldInvalid(group.controls.cantidad)"
                     type="number"
                     min="1"
                     [attr.max]="detailMaxQuantity($index)"
@@ -178,6 +200,9 @@
                     formControlName="cantidad"
                   />
                   <div class="field-picker-row field-picker-row-placeholder" aria-hidden="true"></div>
+                  @if (fieldInvalid(group.controls.cantidad)) {
+                    <span class="field-error">{{ quantityError($index) }}</span>
+                  }
                 </label>
                 <label class="field detail-field">
                   <span class="field-label">Precio unitario</span>

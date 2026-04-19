@@ -94,17 +94,17 @@
 
     <form class="login-form" [formGroup]="form" (ngSubmit)="submit()">
       <label class="field">
-        <span class="field-label">Correo</span>
-        <input class="field-control" type="email" formControlName="email" placeholder="maria.perez@botica.com" />
-        @if (form.controls.email.touched && form.controls.email.invalid) {
+        <span class="field-label">Correo <span class="required-indicator" aria-hidden="true">*</span></span>
+        <input class="field-control" [class.field-control-invalid]="controlInvalid('email')" type="email" formControlName="email" placeholder="maria.perez@botica.com" />
+        @if (controlInvalid('email')) {
           <span class="field-error">Ingresa un correo valido.</span>
         }
       </label>
 
       <label class="field">
-        <span class="field-label">Clave</span>
-        <input class="field-control" type="password" formControlName="password" placeholder="Ingresa tu clave" />
-        @if (form.controls.password.touched && form.controls.password.invalid) {
+        <span class="field-label">Clave <span class="required-indicator" aria-hidden="true">*</span></span>
+        <input class="field-control" [class.field-control-invalid]="controlInvalid('password')" type="password" formControlName="password" placeholder="Ingresa tu clave" />
+        @if (controlInvalid('password')) {
           <span class="field-error">Ingresa tu clave.</span>
         }
       </label>

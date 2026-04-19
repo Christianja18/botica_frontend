@@ -22,155 +22,191 @@
     <div class="banner banner-error">{{ errorMessage() }}</div>
   }
 
-  <section class="stat-grid">
-    <article class="surface stat-card">
-      <p class="muted">Productos</p>
-      <h2 class="stat-value">{{ productos().length }}</h2>
-    </article>
-    <article class="surface stat-card">
-      <p class="muted">Clientes</p>
-      <h2 class="stat-value">{{ clientes().length }}</h2>
-    </article>
-    <article class="surface stat-card">
-      <p class="muted">Ventas completadas</p>
-      <h2 class="stat-value">{{ completedOrders() }}</h2>
-      <p class="muted">Pendientes: {{ pendingOrders() }} · Canceladas: {{ cancelledOrders() }}</p>
-    </article>
-    <article class="surface stat-card">
-      <p class="muted">Ingresos {{ selectedYear() }}</p>
-      <h2 class="stat-value">{{ totalVentasAnuales() | currency: 'PEN':'symbol':'1.2-2' }}</h2>
-      <p class="muted">Ganancia estimada: {{ totalGananciasAnuales() | currency: 'PEN':'symbol':'1.2-2' }}</p>
-    </article>
-  </section>
+  @if (hasDashboardModules()) {
+    <section class="stat-grid">
+      @if (canViewInventario) {
+        <article class="surface stat-card">
+          <p class="muted">Productos</p>
+          <h2 class="stat-value">{{ productos().length }}</h2>
+        </article>
+      }
+
+      @if (canViewVentas) {
+        <article class="surface stat-card">
+          <p class="muted">Clientes</p>
+          <h2 class="stat-value">{{ clientes().length }}</h2>
+        </article>
+
+        <article class="surface stat-card">
+          <p class="muted">Ventas completadas</p>
+          <h2 class="stat-value">{{ completedOrders() }}</h2>
+          <p class="muted">Pendientes: {{ pendingOrders() }} · Canceladas: {{ cancelledOrders() }}</p>
+        </article>
+      }
+
+      @if (canViewReportes) {
+        <article class="surface stat-card">
+          <p class="muted">Ingresos {{ selectedYear() }}</p>
+          <h2 class="stat-value">{{ totalVentasAnuales() | currency: 'PEN':'symbol':'1.2-2' }}</h2>
+          <p class="muted">Ganancia estimada: {{ totalGananciasAnuales() | currency: 'PEN':'symbol':'1.2-2' }}</p>
+        </article>
+      }
+
+      @if (canViewUsuarios) {
+        <article class="surface stat-card">
+          <p class="muted">Usuarios del sistema</p>
+          <h2 class="stat-value">{{ usuarios().length }}</h2>
+        </article>
+      }
+    </section>
+  }
 
   @if (loading()) {
     <div class="surface empty-state"><strong>Cargando dashboard...</strong></div>
   } @else {
-    <section class="card-grid">
-      <article class="surface panel">
-        <div class="panel-header">
-          <div>
-            <h2 class="panel-title">Inventario bajo</h2>
-            <p class="panel-subtitle">Productos cuyo stock ya esta por debajo del minimo.</p>
-          </div>
-          <span class="pill">{{ inventarioBajo().length }} alertas</span>
-        </div>
-        <div class="mini-list">
-          @for (item of inventarioBajo(); track item.nombre) {
-            <article class="mini-row">
+    @if (!hasDashboardModules()) {
+      <div class="surface empty-state"><strong>No hay paneles habilitados para tu perfil.</strong></div>
+    }
+
+    @if (canViewReportes || canViewUsuarios) {
+      <section class="card-grid">
+        @if (canViewReportes) {
+          <article class="surface panel">
+            <div class="panel-header">
               <div>
-                <strong>{{ item.nombre }}</strong>
-                <p class="muted">{{ inventoryStock(item) }}</p>
+                <h2 class="panel-title">Inventario bajo</h2>
+                <p class="panel-subtitle">Productos cuyo stock ya esta por debajo del minimo.</p>
               </div>
-              <span class="status-pill pending">Reponer</span>
-            </article>
-          } @empty {
-            <div class="empty-state">No hay productos con stock critico.</div>
-          }
-        </div>
-      </article>
+              <span class="pill">{{ inventarioBajo().length }} alertas</span>
+            </div>
+            <div class="mini-list">
+              @for (item of inventarioBajo(); track item.nombre) {
+                <article class="mini-row">
+                  <div>
+                    <strong>{{ item.nombre }}</strong>
+                    <p class="muted">{{ inventoryStock(item) }}</p>
+                  </div>
+                  <span class="status-pill pending">Reponer</span>
+                </article>
+              } @empty {
+                <div class="empty-state">No hay productos con stock critico.</div>
+              }
+            </div>
+          </article>
 
-      <article class="surface panel">
-        <div class="panel-header">
-          <div>
-            <h2 class="panel-title">Productos por vencer</h2>
-            <p class="panel-subtitle">Productos que vencen en los proximos 30 dias.</p>
-          </div>
-        </div>
-        <div class="mini-list">
-          @for (item of porVencer(); track item.nombre) {
-            <article class="mini-row">
+          <article class="surface panel">
+            <div class="panel-header">
               <div>
-                <strong>{{ item.nombre }}</strong>
-                <p class="muted">{{ expiringDate(item) }} · {{ expiringDays(item) }}</p>
+                <h2 class="panel-title">Productos por vencer</h2>
+                <p class="panel-subtitle">Productos que vencen en los proximos 30 dias.</p>
               </div>
-              <span class="status-pill pending">Vigilar</span>
-            </article>
-          } @empty {
-            <div class="empty-state">No hay productos proximos a vencer.</div>
-          }
-        </div>
-      </article>
+            </div>
+            <div class="mini-list">
+              @for (item of porVencer(); track item.nombre) {
+                <article class="mini-row">
+                  <div>
+                    <strong>{{ item.nombre }}</strong>
+                    <p class="muted">{{ expiringDate(item) }} · {{ expiringDays(item) }}</p>
+                  </div>
+                  <span class="status-pill pending">Vigilar</span>
+                </article>
+              } @empty {
+                <div class="empty-state">No hay productos proximos a vencer.</div>
+              }
+            </div>
+          </article>
 
-      <article class="surface panel">
-        <div class="panel-header">
-          <div>
-            <h2 class="panel-title">Productos vencidos</h2>
-            <p class="panel-subtitle">Productos vencidos para revisar y retirar.</p>
-          </div>
-        </div>
-        <div class="mini-list">
-          @for (item of vencidos(); track item.nombre) {
-            <article class="mini-row">
+          <article class="surface panel">
+            <div class="panel-header">
               <div>
-                <strong>{{ item.nombre }}</strong>
-                <p class="muted">{{ expiringDate(item) }}</p>
+                <h2 class="panel-title">Productos vencidos</h2>
+                <p class="panel-subtitle">Productos vencidos para revisar y retirar.</p>
               </div>
-              <span class="status-pill cancelled">Retirar</span>
-            </article>
-          } @empty {
-            <div class="empty-state">No hay productos vencidos registrados.</div>
-          }
-        </div>
-      </article>
+            </div>
+            <div class="mini-list">
+              @for (item of vencidos(); track item.nombre) {
+                <article class="mini-row">
+                  <div>
+                    <strong>{{ item.nombre }}</strong>
+                    <p class="muted">{{ expiringDate(item) }}</p>
+                  </div>
+                  <span class="status-pill cancelled">Retirar</span>
+                </article>
+              } @empty {
+                <div class="empty-state">No hay productos vencidos registrados.</div>
+              }
+            </div>
+          </article>
+        }
 
-      <article class="surface panel">
-        <div class="panel-header">
-          <div>
-            <h2 class="panel-title">Equipo activo</h2>
-            <p class="panel-subtitle">Usuarios con acceso al sistema.</p>
+        @if (canViewUsuarios) {
+          <article class="surface panel">
+            <div class="panel-header">
+              <div>
+                <h2 class="panel-title">Equipo activo</h2>
+                <p class="panel-subtitle">Usuarios con acceso al sistema.</p>
+              </div>
+            </div>
+            <div class="mini-list">
+              @for (usuario of usuarios(); track usuario.idUsuario) {
+                <article class="mini-row team-row">
+                  <div class="team-info">
+                    <strong>{{ usuario.nombre }} {{ usuario.apellido }}</strong>
+                    <p class="muted">{{ usuario.email }}</p>
+                  </div>
+                  <span class="status-pill" [class.completed]="usuario.activo" [class.cancelled]="!usuario.activo">
+                    {{ usuario.activo ? 'Activo' : 'Inactivo' }}
+                  </span>
+                </article>
+              } @empty {
+                <div class="empty-state">No hay usuarios disponibles para mostrar.</div>
+              }
+            </div>
+          </article>
+        }
+      </section>
+    }
+
+    @if (canViewReportes) {
+      <section class="card-grid">
+        <article class="surface panel">
+          <h2 class="panel-title">Ventas por mes</h2>
+          <div class="bar-list">
+            @for (item of ventasMensuales(); track metricMonth(item)) {
+              <article class="bar-row">
+                <div class="bar-meta">
+                  <strong>{{ metricMonth(item) }}</strong>
+                  <span>{{ metricValue(item, 'sales') | currency: 'PEN':'symbol':'1.2-2' }}</span>
+                </div>
+                <div class="bar-track">
+                  <div class="bar-fill" [style.width.%]="metricBarWidth(item, 'sales')"></div>
+                </div>
+              </article>
+            } @empty {
+              <div class="empty-state">No hay ventas consolidadas para mostrar.</div>
+            }
           </div>
-        </div>
-        <div class="mini-list">
-          @for (usuario of usuarios(); track usuario.idUsuario) {
-            <article class="mini-row team-row">
-              <div class="team-info">
-                <strong>{{ usuario.nombre }} {{ usuario.apellido }}</strong>
-                <p class="muted">{{ usuario.email }}</p>
-              </div>
-              <span class="status-pill" [class.completed]="usuario.activo" [class.cancelled]="!usuario.activo">
-                {{ usuario.activo ? 'Activo' : 'Inactivo' }}
-              </span>
-            </article>
-          }
-        </div>
-      </article>
-    </section>
+        </article>
 
-    <section class="card-grid">
-      <article class="surface panel">
-        <h2 class="panel-title">Ventas por mes</h2>
-        <div class="bar-list">
-          @for (item of ventasMensuales(); track metricMonth(item)) {
-            <article class="bar-row">
-              <div class="bar-meta">
-                <strong>{{ metricMonth(item) }}</strong>
-                <span>{{ metricValue(item, 'sales') | currency: 'PEN':'symbol':'1.2-2' }}</span>
-              </div>
-              <div class="bar-track">
-                <div class="bar-fill" [style.width.%]="metricBarWidth(item, 'sales')"></div>
-              </div>
-            </article>
-          }
-        </div>
-      </article>
-
-      <article class="surface panel">
-        <h2 class="panel-title">Ganancias por mes</h2>
-        <div class="bar-list">
-          @for (item of gananciasMensuales(); track metricMonth(item)) {
-            <article class="bar-row">
-              <div class="bar-meta">
-                <strong>{{ metricMonth(item) }}</strong>
-                <span>{{ metricValue(item, 'gain') | currency: 'PEN':'symbol':'1.2-2' }}</span>
-              </div>
-              <div class="bar-track">
-                <div class="bar-fill" [style.width.%]="metricBarWidth(item, 'gain')"></div>
-              </div>
-            </article>
-          }
-        </div>
-      </article>
-    </section>
+        <article class="surface panel">
+          <h2 class="panel-title">Ganancias por mes</h2>
+          <div class="bar-list">
+            @for (item of gananciasMensuales(); track metricMonth(item)) {
+              <article class="bar-row">
+                <div class="bar-meta">
+                  <strong>{{ metricMonth(item) }}</strong>
+                  <span>{{ metricValue(item, 'gain') | currency: 'PEN':'symbol':'1.2-2' }}</span>
+                </div>
+                <div class="bar-track">
+                  <div class="bar-fill" [style.width.%]="metricBarWidth(item, 'gain')"></div>
+                </div>
+              </article>
+            } @empty {
+              <div class="empty-state">No hay ganancias consolidadas para mostrar.</div>
+            }
+          </div>
+        </article>
+      </section>
+    }
   }
 </section>

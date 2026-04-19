@@ -74,6 +74,9 @@ export class ReportesPageComponent {
 
   readonly loading = signal(true);
   readonly generating = signal(false);
+  readonly salesSubmitted = signal(false);
+  readonly inventorySubmitted = signal(false);
+  readonly summarySubmitted = signal(false);
   readonly actionLoading = signal(false);
   readonly actionMessage = signal('Cargando informacion...');
   readonly errorMessage = signal<string | null>(null);
@@ -183,12 +186,19 @@ export class ReportesPageComponent {
   }
 
   applySummaryFilters(): void {
+    this.summarySubmitted.set(true);
     if (this.yearRequired() && (!Number.isFinite(this.selectedYear()) || this.selectedYear() <= 0)) {
       this.errorMessage.set('Ingresa un anio valido para consultar el resumen.');
       return;
     }
 
     this.loadPage('Actualizando resumen...');
+  }
+
+  updateSummaryYear(value: number | string): void {
+    const numericYear = Number(value);
+    this.selectedYear.set(Number.isFinite(numericYear) ? numericYear : 0);
+    this.applySummaryFilters();
   }
 
   applyQuickRange(rangeId: QuickRangeId): void {
@@ -221,6 +231,7 @@ export class ReportesPageComponent {
   }
 
   createSalesReport(): void {
+    this.salesSubmitted.set(true);
     if (this.salesForm.invalid) {
       if (this.salesForm.controls.fechaInicio.hasError('maxIsoDate')) {
         this.errorMessage.set(`La fecha inicio no puede ser posterior a ${this.toDisplayDate(this.todayIso)}.`);
@@ -258,6 +269,7 @@ export class ReportesPageComponent {
   }
 
   createInventoryReport(): void {
+    this.inventorySubmitted.set(true);
     if (this.inventoryForm.invalid) {
       this.inventoryForm.markAllAsTouched();
       return;
@@ -361,7 +373,21 @@ export class ReportesPageComponent {
     const option = this.groupingOptions.find((item) => item.value === value);
     if (option) {
       this.selectedGrouping.set(option.value);
+      this.applySummaryFilters();
     }
+  }
+
+  salesControlInvalid(key: 'fechaInicio' | 'fechaFin' | 'idUsuario'): boolean {
+    const control = this.salesForm.controls[key];
+    return control.invalid && this.salesSubmitted();
+  }
+
+  inventoryControlInvalid(): boolean {
+    return this.inventoryForm.controls.idUsuario.invalid && this.inventorySubmitted();
+  }
+
+  summaryYearInvalid(): boolean {
+    return this.summarySubmitted() && this.yearRequired() && (!Number.isFinite(this.selectedYear()) || this.selectedYear() <= 0);
   }
 
   groupingLabel(value: ReportPeriodGrouping): string {

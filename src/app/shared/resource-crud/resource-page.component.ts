@@ -322,7 +322,16 @@ export class ResourcePageComponent implements OnInit, OnDestroy {
 
   controlInvalid(key: string): boolean {
     const control = this.form.controls[key];
-    return !!control && control.invalid && (control.touched || this.submitted());
+    return !!control && control.invalid && this.submitted();
+  }
+
+  isFieldRequired(field: ResourceFieldConfig): boolean {
+    const isEditing = Boolean(this.editingId());
+    return Boolean(
+      field.required ||
+      (field.requiredOnCreate && !isEditing) ||
+      (field.requiredOnEdit && isEditing),
+    );
   }
 
   fieldErrorMessage(field: ResourceFieldConfig): string {

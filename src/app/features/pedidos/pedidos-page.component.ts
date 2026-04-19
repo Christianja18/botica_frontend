@@ -1,7 +1,7 @@
 import { CommonModule, CurrencyPipe, DOCUMENT } from '@angular/common';
 import { Component, computed, DestroyRef, effect, HostListener, inject, OnDestroy, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { FormArray, FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { AbstractControl, FormArray, FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { forkJoin, map, Observable } from 'rxjs';
 
@@ -71,6 +71,7 @@ export class PedidosPageComponent implements OnDestroy {
 
   readonly loading = signal(true);
   readonly saving = signal(false);
+  readonly submitted = signal(false);
   readonly actionLoading = signal(false);
   readonly actionMessage = signal('Cargando información...');
   readonly errorMessage = signal<string | null>(null);
@@ -312,6 +313,7 @@ export class PedidosPageComponent implements OnDestroy {
   }
 
   saveOrder(): void {
+    this.submitted.set(true);
     if (this.pedidoForm.invalid || !this.detailsArray.length) {
       this.pedidoForm.markAllAsTouched();
       return;
@@ -397,6 +399,7 @@ export class PedidosPageComponent implements OnDestroy {
   resetForm(): void {
     this.editingId.set(null);
     this.originalOrder.set(null);
+    this.submitted.set(false);
     this.clearSuccessMessage();
     this.pedidoForm.reset({ idCliente: null, idUsuario: null, estado: 'pendiente', detalles: [] });
     this.detailsArray.clear();
@@ -746,6 +749,7 @@ export class PedidosPageComponent implements OnDestroy {
   private populateOrder(order: PedidoDTO): void {
     this.editingId.set(order.idPedido ?? null);
     this.originalOrder.set(order);
+    this.submitted.set(false);
     this.pedidoForm.patchValue({
       idCliente: order.idCliente ?? null,
       idUsuario: order.idUsuario,
@@ -978,6 +982,31 @@ export class PedidosPageComponent implements OnDestroy {
 
   private finishActionLoading(): void {
     this.actionLoading.set(false);
+  }
+
+  fieldInvalid(control: AbstractControl | null | undefined): boolean {
+    return Boolean(control?.invalid && this.submitted());
+  }
+
+  fieldRequiredMessage(label: string): string {
+    return `Completa el campo ${label.toLowerCase()}.`;
+  }
+
+  quantityError(index: number): string {
+    const control = this.detailsArray.at(index)?.controls.cantidad;
+    if (!control?.errors) {
+      return this.fieldRequiredMessage('cantidad');
+    }
+
+    if (control.hasError('required')) {
+      return this.fieldRequiredMessage('cantidad');
+    }
+
+    if (control.hasError('min')) {
+      return 'Ingresa una cantidad mayor o igual a 1.';
+    }
+
+    return 'Revisa la cantidad ingresada.';
   }
 
   private showSuccessMessage(message: string): void {

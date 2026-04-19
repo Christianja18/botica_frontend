@@ -21,6 +21,7 @@ export class LoginPageComponent {
   readonly appName = appSettings.appName;
   readonly appTagline = appSettings.appTagline;
   readonly loading = signal(false);
+  readonly submitted = signal(false);
   readonly errorMessage = signal<string | null>(null);
 
   readonly form = new FormGroup({
@@ -35,6 +36,7 @@ export class LoginPageComponent {
   });
 
   submit(): void {
+    this.submitted.set(true);
     this.errorMessage.set(null);
     if (this.form.invalid) {
       this.form.markAllAsTouched();
@@ -49,8 +51,13 @@ export class LoginPageComponent {
       })
       .pipe(finalize(() => this.loading.set(false)))
       .subscribe({
-        next: () => void this.router.navigate(['/dashboard']),
+        next: () => void this.router.navigate([this.auth.preferredRoute()]),
         error: (error: unknown) => this.errorMessage.set(resolveApiError(error)),
       });
+  }
+
+  controlInvalid(key: 'email' | 'password'): boolean {
+    const control = this.form.controls[key];
+    return control.invalid && this.submitted();
   }
 }
