@@ -6,7 +6,7 @@ export const proveedoresPageConfig: ResourcePageConfig = {
   title: 'Proveedores',
   description: 'Manten actualizada la red de proveedores y distribuidores de la botica.',
   createLabel: 'proveedor',
-  emptyState: 'Todavia no hay proveedores cargados.',
+  emptyState: 'Todavía no hay proveedores cargados.',
   searchableFields: ['nombre', 'ruc', 'telefono', 'email', 'direccion'],
   pagination: {
     enabled: true,

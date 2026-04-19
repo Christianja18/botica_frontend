@@ -523,12 +523,12 @@ export class PedidosPageComponent implements OnDestroy {
 
     if (this.isProductExpiringSoon(product)) {
       const days = this.daysUntilExpiration(product);
-      return `Producto por vencer${days !== null ? ` en ${days} dias` : ''}.`;
+      return `Producto por vencer${days !== null ? ` en ${days} días` : ''}.`;
     }
 
     if (this.isStockLow(productId)) {
       const inventory = this.inventoryByProductId(productId);
-      return `Stock bajo. Minimo sugerido: ${inventory?.stockMinimo ?? 0}.`;
+      return `Stock bajo. Mínimo sugerido: ${inventory?.stockMinimo ?? 0}.`;
     }
 
     return null;
@@ -582,7 +582,7 @@ export class PedidosPageComponent implements OnDestroy {
       return 'Inventario no disponible';
     }
 
-    return `Stock ${inventory.stockActual} · Minimo ${inventory.stockMinimo}`;
+    return `Stock ${inventory.stockActual} · Mínimo ${inventory.stockMinimo}`;
   }
 
   isProductOutOfStock(productId: number | null | undefined): boolean {

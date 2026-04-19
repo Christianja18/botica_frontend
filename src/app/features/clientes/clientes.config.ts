@@ -6,7 +6,7 @@ export const clientesPageConfig: ResourcePageConfig = {
   title: 'Clientes y pacientes',
   description: 'Registra la base comercial de compradores y pacientes frecuentes.',
   createLabel: 'cliente',
-  emptyState: 'Todavia no hay clientes creados.',
+  emptyState: 'Todavía no hay clientes creados.',
   searchableFields: ['nombre', 'apellido', 'dni', 'telefono', 'email'],
   pagination: {
     enabled: true,

@@ -30,7 +30,6 @@ interface ReportHistoryCard {
   summary: string;
   metrics: string[];
   range: string | null;
-  filePath: string | null;
   source: ReporteDTO;
 }
 
@@ -58,17 +57,17 @@ export class ReportesPageComponent {
   private readonly currentYear = this.today.getFullYear();
 
   readonly groupingOptions: Array<{ value: ReportPeriodGrouping; label: string }> = [
-    { value: 'dia', label: 'Por dia' },
+    { value: 'dia', label: 'Por día' },
     { value: 'mes', label: 'Por mes' },
-    { value: 'anio', label: 'Por anio' },
+    { value: 'anio', label: 'Por año' },
     { value: 'bimestral', label: 'Bimestral' },
     { value: 'trimestral', label: 'Trimestral' },
     { value: 'semestral', label: 'Semestral' },
     { value: 'anual_consolidado', label: 'Anual consolidado' },
   ];
   readonly quickRanges: Array<{ id: QuickRangeId; label: string; hint: string }> = [
-    { id: 'today', label: 'Hoy', hint: 'Mismo dia' },
-    { id: 'last7', label: 'Ultimos 7 dias', hint: 'Revision corta' },
+    { id: 'today', label: 'Hoy', hint: 'Mismo día' },
+    { id: 'last7', label: 'Últimos 7 días', hint: 'Revisión corta' },
     { id: 'month', label: 'Mes actual', hint: 'Cierre mensual' },
   ];
 
@@ -78,7 +77,7 @@ export class ReportesPageComponent {
   readonly inventorySubmitted = signal(false);
   readonly summarySubmitted = signal(false);
   readonly actionLoading = signal(false);
-  readonly actionMessage = signal('Cargando informacion...');
+  readonly actionMessage = signal('Cargando información...');
   readonly errorMessage = signal<string | null>(null);
   readonly reportes = signal<ReporteDTO[]>([]);
   readonly reportesPage = signal(0);
@@ -188,7 +187,7 @@ export class ReportesPageComponent {
   applySummaryFilters(): void {
     this.summarySubmitted.set(true);
     if (this.yearRequired() && (!Number.isFinite(this.selectedYear()) || this.selectedYear() <= 0)) {
-      this.errorMessage.set('Ingresa un anio valido para consultar el resumen.');
+      this.errorMessage.set('Ingresa un año válido para consultar el resumen.');
       return;
     }
 
@@ -316,7 +315,7 @@ export class ReportesPageComponent {
       return `Periodo ${item.periodo}`;
     }
     if (item.anio !== undefined && item.anio !== null) {
-      return `Anio ${item.anio}`;
+      return `Año ${item.anio}`;
     }
     return 'Sin etiqueta';
   }
@@ -397,7 +396,7 @@ export class ReportesPageComponent {
   inventoryStock(item: InventoryAlert): string {
     const stockActual = item.stockActual ?? item.stock_actual ?? 0;
     const stockMinimo = item.stockMinimo ?? item.stock_minimo ?? 0;
-    return `${stockActual} disponibles · minimo ${stockMinimo}`;
+    return `${stockActual} disponibles · mínimo ${stockMinimo}`;
   }
 
   expiringDate(item: ExpiringProduct): string {
@@ -409,7 +408,7 @@ export class ReportesPageComponent {
     if (days === undefined || days === null) {
       return 'Sin dato';
     }
-    return `${days} dias`;
+    return `${days} días`;
   }
 
   private reportOwner(idUsuario: number): string {
@@ -503,7 +502,6 @@ export class ReportesPageComponent {
       summary: this.reportSummary(report),
       metrics: this.reportMetrics(report),
       range: this.reportWindow(report),
-      filePath: report.archivoPath ?? null,
       source: report,
     };
   }

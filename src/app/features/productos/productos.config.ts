@@ -22,7 +22,7 @@ export const productosPageConfig: ResourcePageConfig = {
   title: 'Productos',
   description: 'Gestiona medicamentos y productos de cuidado con categoria, proveedor y vencimiento.',
   createLabel: 'producto',
-  emptyState: 'Todavia no hay productos en catalogo.',
+  emptyState: 'Todavía no hay productos en catálogo.',
   searchableFields: ['nombre', 'codigoBarras', 'descripcion'],
   pagination: {
     enabled: true,

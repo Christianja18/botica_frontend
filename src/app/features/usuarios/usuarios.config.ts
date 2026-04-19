@@ -6,7 +6,7 @@ export const usuariosPageConfig: ResourcePageConfig = {
   title: 'Usuarios del sistema',
   description: 'Administra al personal y sus permisos de acceso.',
   createLabel: 'usuario',
-  emptyState: 'Todavia no hay usuarios registrados.',
+  emptyState: 'Todavía no hay usuarios registrados.',
   searchableFields: ['nombre', 'apellido', 'email'],
   pagination: {
     enabled: true,

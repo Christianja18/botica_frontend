@@ -51,7 +51,7 @@ export const detallesPedidoPageConfig: ResourcePageConfig = {
   title: 'Mantenimiento de detalles',
   description: 'Realiza ajustes puntuales en el detalle de los pedidos.',
   createLabel: 'ajuste puntual',
-  emptyState: 'Todavia no hay ajustes de detalles registrados.',
+  emptyState: 'Todavía no hay ajustes de detalles registrados.',
   searchableFields: ['idPedido', 'idProducto'],
   pagination: {
     enabled: true,

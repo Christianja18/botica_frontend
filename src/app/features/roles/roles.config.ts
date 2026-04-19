@@ -6,7 +6,7 @@ export const rolesPageConfig: ResourcePageConfig = {
   title: 'Roles y permisos',
   description: 'Define que modulos puede usar cada perfil operativo dentro de la botica.',
   createLabel: 'rol',
-  emptyState: 'Todavia no hay roles configurados.',
+  emptyState: 'Todavía no hay roles configurados.',
   searchableFields: ['nombre', 'descripcion'],
   columns: [
     { key: 'nombre', label: 'Rol' },

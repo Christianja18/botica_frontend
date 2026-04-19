@@ -36,7 +36,7 @@ export class AppShellComponent {
   readonly sections = computed(() => {
     const catalog: NavSection[] = [
       {
-        title: 'Operacion',
+        title: 'Operación',
         items: [
           { label: 'Dashboard', route: '/dashboard', caption: 'Indicadores y alertas' },
           {
@@ -60,7 +60,7 @@ export class AppShellComponent {
         ],
       },
       {
-        title: 'Catalogos',
+        title: 'Catálogos',
         items: [
           {
             label: 'Productos',
@@ -71,13 +71,13 @@ export class AppShellComponent {
           {
             label: 'Inventario',
             route: '/inventario',
-            caption: 'Stock y minimos',
+            caption: 'Stock y mínimos',
             permission: 'puedeAdministrarInventario',
           },
           {
-            label: 'Categorias',
+            label: 'Categorías',
             route: '/categorias',
-            caption: 'Clasificacion',
+            caption: 'Clasificación',
             permission: 'puedeAdministrarInventario',
           },
           {
@@ -95,12 +95,12 @@ export class AppShellComponent {
         ],
       },
       {
-        title: 'Gestion',
+        title: 'Gestión',
         items: [
           {
             label: 'Reportes',
             route: '/reportes',
-            caption: 'Analitica y generacion',
+            caption: 'Analítica y generación',
             permission: 'puedeVerReportes',
           },
           {

@@ -6,7 +6,7 @@ export const categoriasPageConfig: ResourcePageConfig = {
   title: 'Categorias',
   description: 'Estructura el catalogo de la botica por familia comercial o terapeutica.',
   createLabel: 'categoria',
-  emptyState: 'Todavia no hay categorias creadas.',
+  emptyState: 'Todavía no hay categorías creadas.',
   searchableFields: ['nombre', 'descripcion'],
   pagination: {
     enabled: true,

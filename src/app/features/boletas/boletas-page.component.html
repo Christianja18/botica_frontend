@@ -47,7 +47,7 @@
         @if (loadingBoletas()) {
           <div class="empty-state"><strong>Cargando boletas...</strong></div>
         } @else if (!boletas().length) {
-          <div class="empty-state">No hay boletas registradas todavia.</div>
+          <div class="empty-state">No hay boletas registradas todavía.</div>
         } @else {
           <div class="print-grid">
             @for (boleta of boletas(); track boleta.idBoleta) {
@@ -104,7 +104,7 @@
           </div>
           <div class="pagination-bar">
             <div class="pagination-info">
-              <strong>Pagina {{ printPage() + 1 }} de {{ printTotalPages() }}</strong>
+              <strong>Página {{ printPage() + 1 }} de {{ printTotalPages() }}</strong>
               <span>{{ printRangeLabel() }}</span>
             </div>
             <div class="pagination-controls">
@@ -113,22 +113,22 @@
                 type="button"
                 [disabled]="printPage() === 0"
                 (click)="previousPrintPage()"
-                aria-label="Pagina anterior"
-                title="Pagina anterior"
+                aria-label="Página anterior"
+                title="Página anterior"
               >
                 <span class="btn-icon-glyph btn-icon-prev" aria-hidden="true"></span>
-                <span class="sr-only">Pagina anterior</span>
+                <span class="sr-only">Página anterior</span>
               </button>
               <button
                 class="btn btn-secondary btn-icon-only"
                 type="button"
                 [disabled]="printPage() + 1 >= printTotalPages()"
                 (click)="nextPrintPage()"
-                aria-label="Pagina siguiente"
-                title="Pagina siguiente"
+                aria-label="Página siguiente"
+                title="Página siguiente"
               >
                 <span class="btn-icon-glyph btn-icon-next" aria-hidden="true"></span>
-                <span class="sr-only">Pagina siguiente</span>
+                <span class="sr-only">Página siguiente</span>
               </button>
             </div>
           </div>

@@ -132,7 +132,7 @@ export class DashboardPageComponent {
   }
 
   inventoryStock(item: InventoryAlertModel): string {
-    return `${item.stockActual ?? item.stock_actual ?? 0} / minimo ${item.stockMinimo ?? item.stock_minimo ?? 0}`;
+    return `${item.stockActual ?? item.stock_actual ?? 0} / mínimo ${item.stockMinimo ?? item.stock_minimo ?? 0}`;
   }
 
   expiringDate(item: ExpiringProductModel): string {
@@ -141,7 +141,7 @@ export class DashboardPageComponent {
 
   expiringDays(item: ExpiringProductModel): string {
     const days = item.diasParaVencer ?? item.dias_para_vencer;
-    return days === undefined ? 'Fecha no disponible' : `${days} dias`;
+    return days === undefined ? 'Fecha no disponible' : `${days} días`;
   }
 
   metricMonth(item: MonthlyMetricModel): string {

@@ -44,7 +44,7 @@ export const boletasPageConfig: ResourcePageConfig = {
   title: 'Boletas',
   description: 'Administra comprobantes vinculados a pedidos y controla su impresion.',
   createLabel: 'boleta',
-  emptyState: 'Todavia no hay boletas registradas.',
+  emptyState: 'Todavía no hay boletas registradas.',
   searchableFields: ['numeroBoleta', 'idPedido', 'datosCliente', 'datosEmpleado'],
   pagination: {
     enabled: true,

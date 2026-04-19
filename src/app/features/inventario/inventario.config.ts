@@ -27,7 +27,7 @@ export const inventarioPageConfig: ResourcePageConfig = {
   title: 'Inventario',
   description: 'Consulta y actualiza el stock de cada producto.',
   createLabel: 'registro de inventario',
-  emptyState: 'Todavia no hay registros de inventario.',
+  emptyState: 'Todavía no hay registros de inventario.',
   searchableFields: ['idProducto', 'stockActual', 'stockMinimo'],
   pagination: {
     enabled: true,
@@ -44,7 +44,7 @@ export const inventarioPageConfig: ResourcePageConfig = {
   columns: [
     { key: 'idProducto', label: 'Producto', type: 'lookup', lookup: productoLookup },
     { key: 'stockActual', label: 'Stock actual' },
-    { key: 'stockMinimo', label: 'Stock minimo' },
+    { key: 'stockMinimo', label: 'Stock mínimo' },
   ],
   fields: [
     {
@@ -59,6 +59,6 @@ export const inventarioPageConfig: ResourcePageConfig = {
       helpText: 'Selecciona el producto.',
     },
     { key: 'stockActual', label: 'Stock actual', type: 'number', required: true, min: 0 },
-    { key: 'stockMinimo', label: 'Stock minimo', type: 'number', required: true, min: 0 },
+    { key: 'stockMinimo', label: 'Stock mínimo', type: 'number', required: true, min: 0 },
   ],
 };

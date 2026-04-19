@@ -1,6 +1,6 @@
 <section class="page-shell">
   <header class="surface page-hero">
-    <p class="page-kicker">Analitica y control</p>
+    <p class="page-kicker">Analítica y control</p>
     <h1 class="page-title">Reportes</h1>
     <p class="page-description">Genera reportes de ventas e inventario, y revisa el estado actual antes de emitirlos.</p>
     <div class="page-toolbar">
@@ -32,7 +32,7 @@
     <article class="surface stat-card">
       <p class="muted">Por vencer</p>
       <h2 class="stat-value">{{ porVencer().length }}</h2>
-      <p class="muted">Alertas operativas para los proximos 30 dias.</p>
+      <p class="muted">Alertas operativas para los próximos 30 días.</p>
     </article>
     <article class="surface stat-card">
       <p class="muted">Vencidos</p>
@@ -169,7 +169,7 @@
           <p class="panel-subtitle">Cada registro muestra el tipo, el responsable y un resumen legible del contenido.</p>
         </div>
         <div class="history-toolbar">
-          <span class="pill">Pagina {{ reportesPage() + 1 }} de {{ reportesTotalPages() }}</span>
+          <span class="pill">Página {{ reportesPage() + 1 }} de {{ reportesTotalPages() }}</span>
           <label class="pagination-size">
             <span>Mostrar</span>
             <select
@@ -189,7 +189,7 @@
       @if (loading()) {
         <div class="empty-state"><strong>Cargando reportes...</strong></div>
       } @else if (!reportes().length) {
-        <div class="empty-state">No hay reportes generados todavia.</div>
+        <div class="empty-state">No hay reportes generados todavía.</div>
       } @else {
         <div class="mini-list history-list">
           @for (card of historyCards(); track card.id) {
@@ -228,16 +228,13 @@
                 <p class="muted">Rango consultado: {{ range }}</p>
               }
 
-              @if (card.filePath) {
-                <p class="muted">Archivo: {{ card.filePath }}</p>
-              }
             </article>
           }
         </div>
 
         <div class="pagination-bar">
           <div class="pagination-info">
-            <strong>Pagina {{ reportesPage() + 1 }} de {{ reportesTotalPages() }}</strong>
+            <strong>Página {{ reportesPage() + 1 }} de {{ reportesTotalPages() }}</strong>
             <span>{{ pageRangeLabel() }}</span>
           </div>
           <div class="pagination-controls">
@@ -246,22 +243,22 @@
               type="button"
               [disabled]="reportesPage() === 0"
               (click)="previousReportPage()"
-              aria-label="Pagina anterior"
-              title="Pagina anterior"
+              aria-label="Página anterior"
+              title="Página anterior"
             >
               <span class="btn-icon-glyph btn-icon-prev" aria-hidden="true"></span>
-              <span class="sr-only">Pagina anterior</span>
+              <span class="sr-only">Página anterior</span>
             </button>
             <button
               class="btn btn-secondary btn-icon-only"
               type="button"
               [disabled]="reportesPage() + 1 >= reportesTotalPages()"
               (click)="nextReportPage()"
-              aria-label="Pagina siguiente"
-              title="Pagina siguiente"
+              aria-label="Página siguiente"
+              title="Página siguiente"
             >
               <span class="btn-icon-glyph btn-icon-next" aria-hidden="true"></span>
-              <span class="sr-only">Pagina siguiente</span>
+              <span class="sr-only">Página siguiente</span>
             </button>
           </div>
         </div>
@@ -291,7 +288,7 @@
         </label>
         @if (yearRequired()) {
           <label class="pagination-size year-field">
-            <span>Anio <span class="required-indicator" aria-hidden="true">*</span></span>
+            <span>Año <span class="required-indicator" aria-hidden="true">*</span></span>
             <input
               class="field-control summary-year-input"
               [class.field-control-invalid]="summaryYearInvalid()"
@@ -303,7 +300,7 @@
               (change)="updateSummaryYear($any($event.target).value)"
             />
             @if (summaryYearInvalid()) {
-              <span class="field-error">Completa un anio valido.</span>
+              <span class="field-error">Completa un año válido.</span>
             }
           </label>
         }

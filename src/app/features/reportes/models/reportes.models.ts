@@ -6,7 +6,6 @@ export interface ReporteDTO {
   fechaFin?: string | null;
   generadoPor: number;
   datos?: string | null;
-  archivoPath?: string | null;
 }
 
 export interface InventoryAlert {

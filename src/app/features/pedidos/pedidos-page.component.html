@@ -1,7 +1,7 @@
 <section class="page-shell">
   <header class="surface page-hero">
     <p class="page-kicker">Ventas y pedidos</p>
-    <h1 class="page-title">Gestion de pedidos</h1>
+    <h1 class="page-title">Gestión de pedidos</h1>
     <p class="page-description">
       Crea, revisa y actualiza pedidos con sus productos.
     </p>
@@ -383,7 +383,7 @@
         </div>
         <div class="pagination-bar">
           <div class="pagination-info">
-            <strong>Pagina {{ historyPage() + 1 }} de {{ historyTotalPages() }}</strong>
+            <strong>Página {{ historyPage() + 1 }} de {{ historyTotalPages() }}</strong>
             <span>{{ historyRangeLabel() }}</span>
           </div>
           <div class="pagination-controls">
@@ -392,22 +392,22 @@
               type="button"
               [disabled]="historyPage() === 0"
               (click)="previousHistoryPage()"
-              aria-label="Pagina anterior"
-              title="Pagina anterior"
+              aria-label="Página anterior"
+              title="Página anterior"
             >
               <span class="btn-icon-glyph btn-icon-prev" aria-hidden="true"></span>
-              <span class="sr-only">Pagina anterior</span>
+              <span class="sr-only">Página anterior</span>
             </button>
             <button
               class="btn btn-secondary btn-icon-only"
               type="button"
               [disabled]="historyPage() + 1 >= historyTotalPages()"
               (click)="nextHistoryPage()"
-              aria-label="Pagina siguiente"
-              title="Pagina siguiente"
+              aria-label="Página siguiente"
+              title="Página siguiente"
             >
               <span class="btn-icon-glyph btn-icon-next" aria-hidden="true"></span>
-              <span class="sr-only">Pagina siguiente</span>
+              <span class="sr-only">Página siguiente</span>
             </button>
           </div>
         </div>
@@ -428,7 +428,7 @@
                 @default { Seleccionar producto }
               }
             </h2>
-            <p class="panel-subtitle">Elige una opcion para continuar con el pedido.</p>
+            <p class="panel-subtitle">Elige una opción para continuar con el pedido.</p>
           </div>
           <button class="btn btn-secondary picker-close-btn" type="button" (click)="closePicker()">Cerrar</button>
         </div>
@@ -457,7 +457,7 @@
               </button>
             }
             @if (!filteredClientes().length) {
-              <div class="empty-state">No hay clientes que coincidan con la busqueda.</div>
+              <div class="empty-state">No hay clientes que coincidan con la búsqueda.</div>
             }
           }
 
@@ -470,7 +470,7 @@
               </button>
             }
             @if (!filteredUsuarios().length) {
-              <div class="empty-state">No hay usuarios que coincidan con la busqueda.</div>
+              <div class="empty-state">No hay usuarios que coincidan con la búsqueda.</div>
             }
           }
 
@@ -507,7 +507,7 @@
               </button>
             }
             @if (!filteredProductos().length) {
-              <div class="empty-state">No hay productos que coincidan con la busqueda.</div>
+              <div class="empty-state">No hay productos que coincidan con la búsqueda.</div>
             }
           }
         </div>
