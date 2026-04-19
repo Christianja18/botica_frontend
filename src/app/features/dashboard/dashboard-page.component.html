@@ -4,7 +4,7 @@
     <h1 class="page-title">Dashboard de la botica</h1>
     <p class="page-description">Consulta indicadores de stock, ventas y alertas de la botica.</p>
     <div class="page-toolbar">
-      <span class="pill">Año analizado: {{ 2026 }}</span>
+      <span class="pill">Anio analizado: {{ selectedYear() }}</span>
       <button
         class="btn btn-ghost btn-icon-only"
         type="button"
@@ -37,7 +37,7 @@
       <p class="muted">Pendientes: {{ pendingOrders() }} · Canceladas: {{ cancelledOrders() }}</p>
     </article>
     <article class="surface stat-card">
-      <p class="muted">Ingresos {{ 2026 }}</p>
+      <p class="muted">Ingresos {{ selectedYear() }}</p>
       <h2 class="stat-value">{{ totalVentasAnuales() | currency: 'PEN':'symbol':'1.2-2' }}</h2>
       <p class="muted">Ganancia estimada: {{ totalGananciasAnuales() | currency: 'PEN':'symbol':'1.2-2' }}</p>
     </article>
@@ -51,7 +51,7 @@
         <div class="panel-header">
           <div>
             <h2 class="panel-title">Inventario bajo</h2>
-            <p class="panel-subtitle">Productos cuyo stock ya está por debajo del mínimo.</p>
+            <p class="panel-subtitle">Productos cuyo stock ya esta por debajo del minimo.</p>
           </div>
           <span class="pill">{{ inventarioBajo().length }} alertas</span>
         </div>
@@ -65,7 +65,7 @@
               <span class="status-pill pending">Reponer</span>
             </article>
           } @empty {
-            <div class="empty-state">No hay productos con stock crítico.</div>
+            <div class="empty-state">No hay productos con stock critico.</div>
           }
         </div>
       </article>
@@ -87,7 +87,7 @@
               <span class="status-pill pending">Vigilar</span>
             </article>
           } @empty {
-            <div class="empty-state">No hay productos próximos a vencer.</div>
+            <div class="empty-state">No hay productos proximos a vencer.</div>
           }
         </div>
       </article>

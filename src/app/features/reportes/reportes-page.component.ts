@@ -21,6 +21,19 @@ import { UsuariosService } from '../usuarios/services';
 type QuickRangeId = 'today' | 'last7' | 'month';
 type ReportDataMap = Record<string, unknown>;
 
+interface ReportHistoryCard {
+  id: number | null;
+  typeLabel: string;
+  typeClass: string;
+  generatedAt: string;
+  owner: string;
+  summary: string;
+  metrics: string[];
+  range: string | null;
+  filePath: string | null;
+  source: ReporteDTO;
+}
+
 function maxIsoDateValidator(maxDate: string): ValidatorFn {
   return (control: AbstractControl): ValidationErrors | null => {
     const value = String(control.value ?? '').trim();
@@ -43,6 +56,7 @@ export class ReportesPageComponent {
   private readonly usuariosService = inject(UsuariosService);
   private readonly today = new Date();
   private readonly currentYear = this.today.getFullYear();
+
   readonly groupingOptions: Array<{ value: ReportPeriodGrouping; label: string }> = [
     { value: 'dia', label: 'Por dia' },
     { value: 'mes', label: 'Por mes' },
@@ -114,6 +128,9 @@ export class ReportesPageComponent {
     const items = this.ventasResumen();
     return items.length ? this.periodLabel(items[items.length - 1]) : 'Sin datos';
   });
+  readonly historyCards = computed<ReportHistoryCard[]>(() =>
+    this.reportes().map((report) => this.toHistoryCard(report)),
+  );
 
   constructor() {
     this.applyQuickRange('month');
@@ -127,6 +144,7 @@ export class ReportesPageComponent {
 
     this.loading.set(true);
     this.errorMessage.set(null);
+
     forkJoin({
       reportesPage: this.reportesService.listPage({
         page: this.reportesPage(),
@@ -262,6 +280,7 @@ export class ReportesPageComponent {
     if (!report.idReporte || !window.confirm('Deseas eliminar este reporte?')) {
       return;
     }
+
     this.startActionLoading('Eliminando reporte...');
     this.reportesService.delete(report.idReporte).subscribe({
       next: () => {
@@ -275,71 +294,6 @@ export class ReportesPageComponent {
         this.finishActionLoading();
       },
     });
-  }
-
-  reportOwner(idUsuario: number): string {
-    const user = this.usuarios().find((item) => item.idUsuario === idUsuario);
-    return user ? `${user.nombre} ${user.apellido}` : `Usuario #${idUsuario}`;
-  }
-
-  reportTypeLabel(type: string): string {
-    switch (String(type).toLowerCase()) {
-      case 'ventas':
-        return 'Ventas';
-      case 'inventario':
-        return 'Inventario';
-      default:
-        return type || 'Reporte';
-    }
-  }
-
-  reportTypeClass(type: string): string {
-    return String(type).toLowerCase() === 'ventas' ? 'sales' : 'inventory';
-  }
-
-  reportSummary(report: ReporteDTO): string {
-    const data = this.parseReportData(report);
-    if (!data) {
-      return 'Sin resumen disponible.';
-    }
-
-    if (Array.isArray(data['ventas'])) {
-      const total = this.toNumericValue(data['total']);
-      return `${data['ventas'].length} ventas incluidas${total !== null ? ` · Total ${this.currencyValue(total)}` : ''}`;
-    }
-
-    if (Array.isArray(data['inventario_bajo'])) {
-      return `${data['inventario_bajo'].length} productos detectados con stock bajo.`;
-    }
-
-    return 'Reporte generado correctamente.';
-  }
-
-  reportMetrics(report: ReporteDTO): string[] {
-    const data = this.parseReportData(report);
-    if (!data) {
-      return [];
-    }
-
-    const metrics: string[] = [];
-    if (Array.isArray(data['ventas'])) {
-      metrics.push(`${data['ventas'].length} ventas`);
-    }
-    const total = this.toNumericValue(data['total']);
-    if (total !== null) {
-      metrics.push(`Total ${this.currencyValue(total)}`);
-    }
-    if (Array.isArray(data['inventario_bajo'])) {
-      metrics.push(`${data['inventario_bajo'].length} alertas`);
-    }
-    return metrics;
-  }
-
-  reportWindow(report: ReporteDTO): string | null {
-    if (!report.fechaInicio || !report.fechaFin) {
-      return null;
-    }
-    return `${report.fechaInicio} a ${report.fechaFin}`;
   }
 
   periodLabel(item: PeriodSummary): string {
@@ -432,6 +386,74 @@ export class ReportesPageComponent {
     return `${days} dias`;
   }
 
+  private reportOwner(idUsuario: number): string {
+    const user = this.usuarios().find((item) => item.idUsuario === idUsuario);
+    return user ? `${user.nombre} ${user.apellido}` : `Usuario #${idUsuario}`;
+  }
+
+  private reportTypeLabel(type: string): string {
+    switch (String(type).toLowerCase()) {
+      case 'ventas':
+        return 'Ventas';
+      case 'inventario':
+        return 'Inventario';
+      default:
+        return type || 'Reporte';
+    }
+  }
+
+  private reportTypeClass(type: string): string {
+    return String(type).toLowerCase() === 'ventas' ? 'sales' : 'inventory';
+  }
+
+  private reportSummary(report: ReporteDTO): string {
+    const data = this.parseReportData(report);
+    if (!data) {
+      return 'Sin resumen disponible.';
+    }
+
+    if (Array.isArray(data['ventas'])) {
+      const total = this.toNumericValue(data['total']);
+      return `${data['ventas'].length} ventas incluidas${total !== null ? ` · Total ${this.currencyValue(total)}` : ''}`;
+    }
+
+    if (Array.isArray(data['inventario_bajo'])) {
+      return `${data['inventario_bajo'].length} productos detectados con stock bajo.`;
+    }
+
+    return 'Reporte generado correctamente.';
+  }
+
+  private reportMetrics(report: ReporteDTO): string[] {
+    const data = this.parseReportData(report);
+    if (!data) {
+      return [];
+    }
+
+    const metrics: string[] = [];
+    if (Array.isArray(data['ventas'])) {
+      metrics.push(`${data['ventas'].length} ventas`);
+    }
+
+    const total = this.toNumericValue(data['total']);
+    if (total !== null) {
+      metrics.push(`Total ${this.currencyValue(total)}`);
+    }
+
+    if (Array.isArray(data['inventario_bajo'])) {
+      metrics.push(`${data['inventario_bajo'].length} alertas`);
+    }
+
+    return metrics;
+  }
+
+  private reportWindow(report: ReporteDTO): string | null {
+    if (!report.fechaInicio || !report.fechaFin) {
+      return null;
+    }
+    return `${report.fechaInicio} a ${report.fechaFin}`;
+  }
+
   private parseReportData(report: ReporteDTO): ReportDataMap | null {
     if (!report.datos) {
       return null;
@@ -443,6 +465,21 @@ export class ReportesPageComponent {
     } catch {
       return null;
     }
+  }
+
+  private toHistoryCard(report: ReporteDTO): ReportHistoryCard {
+    return {
+      id: report.idReporte ?? null,
+      typeLabel: this.reportTypeLabel(report.tipoReporte),
+      typeClass: this.reportTypeClass(report.tipoReporte),
+      generatedAt: report.fechaGeneracion || 'Sin fecha',
+      owner: this.reportOwner(report.generadoPor),
+      summary: this.reportSummary(report),
+      metrics: this.reportMetrics(report),
+      range: this.reportWindow(report),
+      filePath: report.archivoPath ?? null,
+      source: report,
+    };
   }
 
   private toNumericValue(value: unknown): number | null {

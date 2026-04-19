@@ -182,20 +182,20 @@
         <div class="empty-state">No hay reportes generados todavia.</div>
       } @else {
         <div class="mini-list history-list">
-          @for (report of reportes(); track report.idReporte) {
+          @for (card of historyCards(); track card.id) {
             <article class="surface order-card report-history-card">
               <div class="panel-header report-card-header">
                 <div class="report-card-copy">
-                  <span class="pill report-type-pill" [class.sales]="reportTypeClass(report.tipoReporte) === 'sales'">
-                    {{ reportTypeLabel(report.tipoReporte) }}
+                  <span class="pill report-type-pill" [class.sales]="card.typeClass === 'sales'">
+                    {{ card.typeLabel }}
                   </span>
-                  <h3 class="panel-title">Reporte #{{ report.idReporte }}</h3>
-                  <p class="panel-subtitle">{{ report.fechaGeneracion || 'Sin fecha' }} · {{ reportOwner(report.generadoPor) }}</p>
+                  <h3 class="panel-title">Reporte #{{ card.id }}</h3>
+                  <p class="panel-subtitle">{{ card.generatedAt }} · {{ card.owner }}</p>
                 </div>
                 <button
                   class="btn btn-danger btn-icon-only"
                   type="button"
-                  (click)="deleteReport(report)"
+                  (click)="deleteReport(card.source)"
                   aria-label="Eliminar reporte"
                   title="Eliminar reporte"
                 >
@@ -204,22 +204,22 @@
                 </button>
               </div>
 
-              <p class="report-summary">{{ reportSummary(report) }}</p>
+              <p class="report-summary">{{ card.summary }}</p>
 
-              @if (reportMetrics(report).length) {
+              @if (card.metrics.length) {
                 <div class="metric-chip-row">
-                  @for (metric of reportMetrics(report); track metric) {
+                  @for (metric of card.metrics; track metric) {
                     <span class="metric-chip">{{ metric }}</span>
                   }
                 </div>
               }
 
-              @if (reportWindow(report); as range) {
+              @if (card.range; as range) {
                 <p class="muted">Rango consultado: {{ range }}</p>
               }
 
-              @if (report.archivoPath) {
-                <p class="muted">Archivo: {{ report.archivoPath }}</p>
+              @if (card.filePath) {
+                <p class="muted">Archivo: {{ card.filePath }}</p>
               }
             </article>
           }

@@ -32,7 +32,7 @@ export class DashboardPageComponent {
   private readonly reportesService = inject(ReportesService);
   private readonly stockRefresh = inject(StockRefreshService);
   private readonly usuariosService = inject(UsuariosService);
-  private readonly currentYear = 2026;
+  private readonly currentYear = new Date().getFullYear();
   private handledStockRefreshVersion = 0;
 
   readonly loading = signal(true);
@@ -115,7 +115,7 @@ export class DashboardPageComponent {
   }
 
   inventoryStock(item: InventoryAlertModel): string {
-    return `${item.stockActual ?? item.stock_actual ?? 0} / mínimo ${item.stockMinimo ?? item.stock_minimo ?? 0}`;
+    return `${item.stockActual ?? item.stock_actual ?? 0} / minimo ${item.stockMinimo ?? item.stock_minimo ?? 0}`;
   }
 
   expiringDate(item: ExpiringProductModel): string {
@@ -124,7 +124,7 @@ export class DashboardPageComponent {
 
   expiringDays(item: ExpiringProductModel): string {
     const days = item.diasParaVencer ?? item.dias_para_vencer;
-    return days === undefined ? 'Fecha no disponible' : `${days} días`;
+    return days === undefined ? 'Fecha no disponible' : `${days} dias`;
   }
 
   metricMonth(item: MonthlyMetricModel): string {
@@ -132,7 +132,7 @@ export class DashboardPageComponent {
       return item.etiqueta;
     }
     const month = item.mes ?? item.month ?? 1;
-    return new Intl.DateTimeFormat('es-PE', { month: 'long' }).format(new Date(2026, month - 1, 1));
+    return new Intl.DateTimeFormat('es-PE', { month: 'long' }).format(new Date(this.currentYear, month - 1, 1));
   }
 
   metricValue(item: MonthlyMetricModel, kind: 'sales' | 'gain'): number {
@@ -142,5 +142,9 @@ export class DashboardPageComponent {
   metricBarWidth(item: MonthlyMetricModel, kind: 'sales' | 'gain'): number {
     const max = kind === 'sales' ? this.ventasBarMax() : this.gananciasBarMax();
     return (this.metricValue(item, kind) / max) * 100;
+  }
+
+  selectedYear(): number {
+    return this.currentYear;
   }
 }
