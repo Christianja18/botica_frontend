@@ -1,5 +1,6 @@
 import { CommonModule, DOCUMENT } from '@angular/common';
-import { Component, computed, DestroyRef, effect, HostListener, inject, Injector, input, OnDestroy, OnInit, output, signal } from '@angular/core';
+import { HttpResponse } from '@angular/common/http';
+import { Component, computed, DestroyRef, effect, ElementRef, HostListener, inject, Injector, input, OnDestroy, OnInit, output, signal, viewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, ParamMap, Router } from '@angular/router';
@@ -12,6 +13,7 @@ import {
   LookupConfig,
   ResourceColumnConfig,
   ResourceFieldConfig,
+  ImportResult,
   ResourcePageConfig,
 } from './resource-page.types';
 import {
@@ -66,10 +68,12 @@ export class ResourcePageComponent implements OnInit, OnDestroy {
   readonly pageSize = signal(5);
   readonly totalPages = signal(1);
   readonly totalElements = signal(0);
+  readonly transferFormat = signal<'csv' | 'excel'>('csv');
   readonly defaultValues: Record<string, unknown> = {};
   readonly form = new FormGroup<Record<string, FormControl<unknown>>>({});
   readonly requestedEditId = signal<number | null>(null);
   readonly todayIso = this.toIsoDate(new Date());
+  readonly importFileInput = viewChild<ElementRef<HTMLInputElement>>('importFileInput');
   private pendingSuccessMessage: string | null = null;
   private successMessageTimeoutId: number | null = null;
   private handledRefreshVersion = 0;
@@ -119,6 +123,19 @@ export class ResourcePageComponent implements OnInit, OnDestroy {
   });
 
   readonly showPagination = computed(() => this.paginationEnabled() && !this.loading());
+  readonly importExportEnabled = computed(
+    () => Boolean(this.config().importExport?.enabled && this.resourceService().exportData && this.resourceService().importData),
+  );
+  readonly importExportFormats = computed(() => {
+    const configured = this.config().importExport?.formats;
+    return configured?.length ? configured : (['csv', 'excel'] as const);
+  });
+  readonly selectedTransferLabel = computed(() => (this.transferFormat() === 'csv' ? 'CSV' : 'Excel'));
+  readonly acceptedImportTypes = computed(() =>
+    this.transferFormat() === 'csv'
+      ? '.csv,text/csv'
+      : '.xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel',
+  );
 
   readonly listCountLabel = computed(() =>
     this.paginationEnabled() ? `${this.totalElements()} registros` : `${this.filteredItems().length} elementos`,
@@ -137,6 +154,7 @@ export class ResourcePageComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.buildForm();
     this.restorePaginationState();
+    this.transferFormat.set(this.config().importExport?.defaultFormat ?? 'csv');
     this.handledRefreshVersion = this.refreshVersion();
 
     effect(
@@ -536,6 +554,67 @@ export class ResourcePageComponent implements OnInit, OnDestroy {
     this.loadPage('Actualizando paginacion...');
   }
 
+  changeTransferFormat(value: string): void {
+    if (value === 'csv' || value === 'excel') {
+      this.transferFormat.set(value);
+    }
+  }
+
+  exportItems(): void {
+    if (!this.importExportEnabled()) {
+      return;
+    }
+
+    this.startActionLoading(`Exportando ${this.selectedTransferLabel()}...`);
+    this.clearSuccessMessage();
+    (this.resourceService().exportData!(this.transferFormat()) as Observable<HttpResponse<Blob>>).subscribe({
+      next: (response) => {
+        this.downloadExportedFile(response, this.transferFormat());
+        this.showSuccessMessage(`Exportacion ${this.selectedTransferLabel()} completada.`);
+        this.finishActionLoading();
+      },
+      error: (error: unknown) => {
+        this.errorMessage.set(resolveApiError(error));
+        this.finishActionLoading();
+      },
+    });
+  }
+
+  openImportPicker(): void {
+    this.importFileInput()?.nativeElement.click();
+  }
+
+  importItems(event: Event): void {
+    const input = event.target as HTMLInputElement | null;
+    const file = input?.files?.[0];
+    if (!file || !this.importExportEnabled()) {
+      this.resetImportInput(input);
+      return;
+    }
+
+    this.startActionLoading(`Importando ${this.selectedTransferLabel()}...`);
+    this.clearSuccessMessage();
+    this.resourceService().importData!(this.transferFormat(), file).subscribe({
+      next: (result) => {
+        this.pendingSuccessMessage = this.buildImportSuccessMessage(result);
+        if ((result.fallidos ?? 0) > 0) {
+          this.errorMessage.set(this.buildImportErrorMessage(result));
+        } else {
+          this.errorMessage.set(null);
+        }
+        this.currentPage.set(0);
+        this.persistPaginationState();
+        this.loadPage();
+        this.resetImportInput(input);
+      },
+      error: (error: unknown) => {
+        this.errorMessage.set(resolveApiError(error));
+        this.finishActionLoading();
+        this.resetImportInput(input);
+      },
+    });
+  }
+
   selectLookupOption(option: Record<string, unknown>): void {
     const field = this.activePickerField();
     if (!field?.lookup) {
@@ -855,5 +934,62 @@ export class ResourcePageComponent implements OnInit, OnDestroy {
       this.successMessageTimeoutId = null;
     }
     this.successMessage.set(null);
+  }
+
+  private downloadExportedFile(response: HttpResponse<Blob>, format: 'csv' | 'excel'): void {
+    const body = response.body;
+    if (!body) {
+      return;
+    }
+
+    const fileName = this.resolveExportFileName(response, format);
+    const url = this.document.defaultView?.URL.createObjectURL(body);
+    if (!url) {
+      return;
+    }
+
+    const anchor = this.document.createElement('a');
+    anchor.href = url;
+    anchor.download = fileName;
+    this.document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    this.document.defaultView?.URL.revokeObjectURL(url);
+  }
+
+  private resolveExportFileName(response: HttpResponse<Blob>, format: 'csv' | 'excel'): string {
+    const disposition = response.headers.get('content-disposition') ?? '';
+    const match = disposition.match(/filename\*?=(?:UTF-8''|")?([^\";]+)/i);
+    if (match?.[1]) {
+      return decodeURIComponent(match[1].replace(/"/g, '').trim());
+    }
+
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const extension = format === 'csv' ? 'csv' : 'xlsx';
+    return `${this.config().key}-${timestamp}.${extension}`;
+  }
+
+  private buildImportSuccessMessage(result: ImportResult): string {
+    const partes = [
+      `Importacion completada: ${result.insertados ?? 0} insertados`,
+      `${result.actualizados ?? 0} actualizados`,
+      `${result.fallidos ?? 0} fallidos`,
+    ];
+    return partes.join(', ') + '.';
+  }
+
+  private buildImportErrorMessage(result: ImportResult): string {
+    const errores = (result.errores ?? [])
+      .slice(0, 3)
+      .map((error) => `Fila ${error.fila ?? '-'}: ${error.mensaje ?? 'Error no especificado'}`);
+    return errores.length
+      ? `La importacion tuvo observaciones. ${errores.join(' | ')}`
+      : 'La importacion tuvo filas fallidas.';
+  }
+
+  private resetImportInput(input: HTMLInputElement | null): void {
+    if (input) {
+      input.value = '';
+    }
   }
 }

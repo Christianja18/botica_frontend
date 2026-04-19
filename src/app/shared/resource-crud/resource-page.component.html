@@ -12,6 +12,50 @@
           [value]="searchTerm()"
           (input)="searchTerm.set($any($event.target).value)"
         />
+        @if (importExportEnabled()) {
+          <div class="transfer-controls">
+            <label class="pagination-size">
+              <span>Formato</span>
+              <select
+                class="field-control pagination-select toolbar-select"
+                [ngModel]="transferFormat()"
+                [ngModelOptions]="{ standalone: true }"
+                (ngModelChange)="changeTransferFormat($event)"
+              >
+                @for (format of importExportFormats(); track format) {
+                  <option [ngValue]="format">{{ format === 'csv' ? 'CSV' : 'Excel' }}</option>
+                }
+              </select>
+            </label>
+            <button
+              class="btn btn-secondary btn-icon-only"
+              type="button"
+              (click)="exportItems()"
+              [attr.aria-label]="'Exportar en ' + selectedTransferLabel()"
+              [attr.title]="'Exportar en ' + selectedTransferLabel()"
+            >
+              <span class="btn-icon-glyph btn-icon-next" aria-hidden="true"></span>
+              <span class="sr-only">Exportar en {{ selectedTransferLabel() }}</span>
+            </button>
+            <button
+              class="btn btn-secondary btn-icon-only"
+              type="button"
+              (click)="openImportPicker()"
+              [attr.aria-label]="'Importar en ' + selectedTransferLabel()"
+              [attr.title]="'Importar en ' + selectedTransferLabel()"
+            >
+              <span class="btn-icon-glyph btn-icon-save" aria-hidden="true"></span>
+              <span class="sr-only">Importar en {{ selectedTransferLabel() }}</span>
+            </button>
+            <input
+              #importFileInput
+              class="visually-hidden-input"
+              type="file"
+              [accept]="acceptedImportTypes()"
+              (change)="importItems($event)"
+            />
+          </div>
+        }
         <button
           class="btn btn-ghost btn-icon-only"
           type="button"

@@ -31,6 +31,11 @@ export const productosPageConfig: ResourcePageConfig = {
     sortBy: 'idProducto',
     direction: 'asc',
   },
+  importExport: {
+    enabled: true,
+    defaultFormat: 'csv',
+    formats: ['csv', 'excel'],
+  },
   columns: [
     { key: 'codigoBarras', label: 'Codigo' },
     { key: 'nombre', label: 'Producto' },

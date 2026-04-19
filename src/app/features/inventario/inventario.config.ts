@@ -36,6 +36,11 @@ export const inventarioPageConfig: ResourcePageConfig = {
     sortBy: 'idInventario',
     direction: 'asc',
   },
+  importExport: {
+    enabled: true,
+    defaultFormat: 'csv',
+    formats: ['csv', 'excel'],
+  },
   columns: [
     { key: 'idProducto', label: 'Producto', type: 'lookup', lookup: productoLookup },
     { key: 'stockActual', label: 'Stock actual' },

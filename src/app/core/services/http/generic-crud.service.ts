@@ -1,4 +1,4 @@
-import { HttpParams } from '@angular/common/http';
+import { HttpParams, HttpResponse } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
 import { PageQueryParams, PageResponse } from '../../models';
@@ -37,5 +37,23 @@ export abstract class GenericCrudService<TItem, TPayload = TItem> extends BaseAp
 
   delete(id: number): Observable<void> {
     return this.deleteRequest<void>(`${this.resourcePath}/${id}`);
+  }
+
+  exportData(format: 'csv' | 'excel'): Observable<HttpResponse<Blob>> {
+    return this.getBlobResponse(`${this.resourcePath}/exportar/${format}`);
+  }
+
+  importData(format: 'csv' | 'excel', file: File): Observable<{
+    recurso?: string;
+    formato?: string;
+    totalFilas?: number;
+    insertados?: number;
+    actualizados?: number;
+    fallidos?: number;
+    errores?: { fila?: number; mensaje?: string }[];
+  }> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.postForm(`${this.resourcePath}/importar/${format}`, formData);
   }
 }

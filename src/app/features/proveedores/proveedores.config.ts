@@ -15,6 +15,11 @@ export const proveedoresPageConfig: ResourcePageConfig = {
     sortBy: 'idProveedor',
     direction: 'asc',
   },
+  importExport: {
+    enabled: true,
+    defaultFormat: 'csv',
+    formats: ['csv', 'excel'],
+  },
   columns: [
     { key: 'nombre', label: 'Proveedor' },
     { key: 'ruc', label: 'RUC' },

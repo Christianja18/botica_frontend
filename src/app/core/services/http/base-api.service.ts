@@ -1,4 +1,4 @@
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpParams, HttpResponse } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { Observable } from 'rxjs';
 
@@ -22,12 +22,24 @@ export abstract class BaseApiService {
     return this.getRequest<T>(path, options);
   }
 
+  protected getBlobResponse(path: string, options?: { params?: HttpParams }): Observable<HttpResponse<Blob>> {
+    return this.http.get(this.buildUrl(path), {
+      ...options,
+      observe: 'response',
+      responseType: 'blob',
+    });
+  }
+
   protected postRequest<T>(path: string, body: unknown, options?: { params?: HttpParams }): Observable<T> {
     return this.http.post<T>(this.buildUrl(path), body, options);
   }
 
   protected post<T>(path: string, body: unknown, options?: { params?: HttpParams }): Observable<T> {
     return this.postRequest<T>(path, body, options);
+  }
+
+  protected postForm<T>(path: string, body: FormData, options?: { params?: HttpParams }): Observable<T> {
+    return this.http.post<T>(this.buildUrl(path), body, options);
   }
 
   protected putRequest<T>(path: string, body: unknown): Observable<T> {

@@ -1,13 +1,25 @@
 import { CommonModule, CurrencyPipe } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
-import { AbstractControl, FormControl, FormGroup, FormsModule, ReactiveFormsModule, ValidationErrors, ValidatorFn, Validators } from '@angular/forms';
+import {
+  AbstractControl,
+  FormControl,
+  FormGroup,
+  FormsModule,
+  ReactiveFormsModule,
+  ValidationErrors,
+  ValidatorFn,
+  Validators,
+} from '@angular/forms';
 import { forkJoin } from 'rxjs';
 
 import { resolveApiError } from '../../core/services';
-import { MonthlyMetric, ReporteDTO } from './models';
+import { ExpiringProduct, InventoryAlert, PeriodSummary, ReporteDTO, ReportPeriodGrouping } from './models';
 import { ReportesService } from './services';
 import { UsuarioDTO } from '../usuarios/models';
 import { UsuariosService } from '../usuarios/services';
+
+type QuickRangeId = 'today' | 'last7' | 'month';
+type ReportDataMap = Record<string, unknown>;
 
 function maxIsoDateValidator(maxDate: string): ValidatorFn {
   return (control: AbstractControl): ValidationErrors | null => {
@@ -31,11 +43,25 @@ export class ReportesPageComponent {
   private readonly usuariosService = inject(UsuariosService);
   private readonly today = new Date();
   private readonly currentYear = this.today.getFullYear();
+  readonly groupingOptions: Array<{ value: ReportPeriodGrouping; label: string }> = [
+    { value: 'dia', label: 'Por dia' },
+    { value: 'mes', label: 'Por mes' },
+    { value: 'anio', label: 'Por anio' },
+    { value: 'bimestral', label: 'Bimestral' },
+    { value: 'trimestral', label: 'Trimestral' },
+    { value: 'semestral', label: 'Semestral' },
+    { value: 'anual_consolidado', label: 'Anual consolidado' },
+  ];
+  readonly quickRanges: Array<{ id: QuickRangeId; label: string; hint: string }> = [
+    { id: 'today', label: 'Hoy', hint: 'Mismo dia' },
+    { id: 'last7', label: 'Ultimos 7 dias', hint: 'Revision corta' },
+    { id: 'month', label: 'Mes actual', hint: 'Cierre mensual' },
+  ];
 
   readonly loading = signal(true);
   readonly generating = signal(false);
   readonly actionLoading = signal(false);
-  readonly actionMessage = signal('Cargando informaciÃ³n...');
+  readonly actionMessage = signal('Cargando informacion...');
   readonly errorMessage = signal<string | null>(null);
   readonly reportes = signal<ReporteDTO[]>([]);
   readonly reportesPage = signal(0);
@@ -43,8 +69,14 @@ export class ReportesPageComponent {
   readonly reportesTotalElements = signal(0);
   readonly reportesTotalPages = signal(1);
   readonly usuarios = signal<UsuarioDTO[]>([]);
-  readonly ventasMensuales = signal<MonthlyMetric[]>([]);
-  readonly gananciasMensuales = signal<MonthlyMetric[]>([]);
+  readonly ventasResumen = signal<PeriodSummary[]>([]);
+  readonly gananciasResumen = signal<PeriodSummary[]>([]);
+  readonly inventarioBajo = signal<InventoryAlert[]>([]);
+  readonly porVencer = signal<ExpiringProduct[]>([]);
+  readonly vencidos = signal<ExpiringProduct[]>([]);
+  readonly selectedGrouping = signal<ReportPeriodGrouping>('mes');
+  readonly selectedYear = signal(this.currentYear);
+  readonly activeQuickRange = signal<QuickRangeId | null>('month');
   readonly todayIso = this.toIsoDate(this.today);
   readonly pageSizeOptions = [5, 10, 15, 20, 50];
 
@@ -64,14 +96,27 @@ export class ReportesPageComponent {
     idUsuario: new FormControl<number | null>(null, { validators: [Validators.required] }),
   });
 
-  readonly monthlyMax = computed(() =>
-    Math.max(1, ...this.ventasMensuales().map((item) => Number(item.totalVentas ?? item.total_ventas ?? 0))),
+  readonly yearRequired = computed(() => this.selectedGrouping() !== 'anio');
+  readonly summarySectionTitle = computed(() => this.groupingLabel(this.selectedGrouping()).toLowerCase());
+  readonly salesMax = computed(() =>
+    Math.max(1, ...this.ventasResumen().map((item) => Number(item.valor ?? 0))),
   );
   readonly gainMax = computed(() =>
-    Math.max(1, ...this.gananciasMensuales().map((item) => Number(item.ganancia ?? 0))),
+    Math.max(1, ...this.gananciasResumen().map((item) => Number(item.valor ?? 0))),
   );
+  readonly totalSalesSummary = computed(() =>
+    this.ventasResumen().reduce((total, item) => total + Number(item.valor ?? 0), 0),
+  );
+  readonly totalGainSummary = computed(() =>
+    this.gananciasResumen().reduce((total, item) => total + Number(item.valor ?? 0), 0),
+  );
+  readonly latestSalesLabel = computed(() => {
+    const items = this.ventasResumen();
+    return items.length ? this.periodLabel(items[items.length - 1]) : 'Sin datos';
+  });
 
   constructor() {
+    this.applyQuickRange('month');
     this.loadPage();
   }
 
@@ -90,8 +135,11 @@ export class ReportesPageComponent {
         direction: 'desc',
       }),
       usuarios: this.usuariosService.list(),
-      ventas: this.reportesService.getVentasPorMes(this.currentYear),
-      ganancias: this.reportesService.getGananciasPorMes(this.currentYear),
+      ventas: this.reportesService.getVentasResumen(this.selectedGrouping(), this.resolveSummaryYear()),
+      ganancias: this.reportesService.getGananciasResumen(this.selectedGrouping(), this.resolveSummaryYear()),
+      inventarioBajo: this.reportesService.getInventarioBajo(),
+      porVencer: this.reportesService.getProductosPorVencer(),
+      vencidos: this.reportesService.getProductosVencidos(),
     }).subscribe({
       next: (response) => {
         this.reportes.set(response.reportesPage.content);
@@ -100,8 +148,11 @@ export class ReportesPageComponent {
         this.reportesTotalElements.set(response.reportesPage.totalElements);
         this.reportesTotalPages.set(Math.max(response.reportesPage.totalPages, 1));
         this.usuarios.set(response.usuarios);
-        this.ventasMensuales.set(response.ventas);
-        this.gananciasMensuales.set(response.ganancias);
+        this.ventasResumen.set(response.ventas);
+        this.gananciasResumen.set(response.ganancias);
+        this.inventarioBajo.set(response.inventarioBajo);
+        this.porVencer.set(response.porVencer);
+        this.vencidos.set(response.vencidos);
         this.loading.set(false);
         this.finishActionLoading();
       },
@@ -111,6 +162,44 @@ export class ReportesPageComponent {
         this.finishActionLoading();
       },
     });
+  }
+
+  applySummaryFilters(): void {
+    if (this.yearRequired() && (!Number.isFinite(this.selectedYear()) || this.selectedYear() <= 0)) {
+      this.errorMessage.set('Ingresa un anio valido para consultar el resumen.');
+      return;
+    }
+
+    this.loadPage('Actualizando resumen...');
+  }
+
+  applyQuickRange(rangeId: QuickRangeId): void {
+    const today = new Date(this.today);
+    const end = this.toIsoDate(today);
+    let startDate = new Date(today);
+
+    switch (rangeId) {
+      case 'today':
+        break;
+      case 'last7':
+        startDate.setDate(startDate.getDate() - 6);
+        break;
+      case 'month':
+        startDate = new Date(today.getFullYear(), today.getMonth(), 1);
+        break;
+    }
+
+    this.salesForm.patchValue({
+      fechaInicio: this.toIsoDate(startDate),
+      fechaFin: end,
+    });
+    this.activeQuickRange.set(rangeId);
+    this.errorMessage.set(null);
+  }
+
+  clearSalesDates(): void {
+    this.salesForm.patchValue({ fechaInicio: '', fechaFin: '' });
+    this.activeQuickRange.set(null);
   }
 
   createSalesReport(): void {
@@ -140,8 +229,7 @@ export class ReportesPageComponent {
       })
       .subscribe({
         next: () => {
-          this.salesForm.reset({ fechaInicio: '', fechaFin: '', idUsuario: null });
-          this.loadPage();
+          this.loadPage('Reporte de ventas generado.');
           this.generating.set(false);
         },
         error: (error: unknown) => {
@@ -160,8 +248,7 @@ export class ReportesPageComponent {
     this.generating.set(true);
     this.reportesService.generateInventoryReport(Number(this.inventoryForm.controls.idUsuario.value)).subscribe({
       next: () => {
-        this.inventoryForm.reset({ idUsuario: null });
-        this.loadPage();
+        this.loadPage('Reporte de inventario generado.');
         this.generating.set(false);
       },
       error: (error: unknown) => {
@@ -172,7 +259,7 @@ export class ReportesPageComponent {
   }
 
   deleteReport(report: ReporteDTO): void {
-    if (!report.idReporte || !window.confirm('¿Deseas eliminar este reporte?')) {
+    if (!report.idReporte || !window.confirm('Deseas eliminar este reporte?')) {
       return;
     }
     this.startActionLoading('Eliminando reporte...');
@@ -195,27 +282,87 @@ export class ReportesPageComponent {
     return user ? `${user.nombre} ${user.apellido}` : `Usuario #${idUsuario}`;
   }
 
-  reportDataPreview(report: ReporteDTO): string {
-    if (!report.datos) return 'Sin datos JSON adicionales.';
-    return report.datos.length <= 120 ? report.datos : `${report.datos.slice(0, 120)}...`;
+  reportTypeLabel(type: string): string {
+    switch (String(type).toLowerCase()) {
+      case 'ventas':
+        return 'Ventas';
+      case 'inventario':
+        return 'Inventario';
+      default:
+        return type || 'Reporte';
+    }
   }
 
-  monthLabel(item: MonthlyMetric): string {
+  reportTypeClass(type: string): string {
+    return String(type).toLowerCase() === 'ventas' ? 'sales' : 'inventory';
+  }
+
+  reportSummary(report: ReporteDTO): string {
+    const data = this.parseReportData(report);
+    if (!data) {
+      return 'Sin resumen disponible.';
+    }
+
+    if (Array.isArray(data['ventas'])) {
+      const total = this.toNumericValue(data['total']);
+      return `${data['ventas'].length} ventas incluidas${total !== null ? ` · Total ${this.currencyValue(total)}` : ''}`;
+    }
+
+    if (Array.isArray(data['inventario_bajo'])) {
+      return `${data['inventario_bajo'].length} productos detectados con stock bajo.`;
+    }
+
+    return 'Reporte generado correctamente.';
+  }
+
+  reportMetrics(report: ReporteDTO): string[] {
+    const data = this.parseReportData(report);
+    if (!data) {
+      return [];
+    }
+
+    const metrics: string[] = [];
+    if (Array.isArray(data['ventas'])) {
+      metrics.push(`${data['ventas'].length} ventas`);
+    }
+    const total = this.toNumericValue(data['total']);
+    if (total !== null) {
+      metrics.push(`Total ${this.currencyValue(total)}`);
+    }
+    if (Array.isArray(data['inventario_bajo'])) {
+      metrics.push(`${data['inventario_bajo'].length} alertas`);
+    }
+    return metrics;
+  }
+
+  reportWindow(report: ReporteDTO): string | null {
+    if (!report.fechaInicio || !report.fechaFin) {
+      return null;
+    }
+    return `${report.fechaInicio} a ${report.fechaFin}`;
+  }
+
+  periodLabel(item: PeriodSummary): string {
     if (item.etiqueta?.trim()) {
       return item.etiqueta;
     }
-    const month = item.mes ?? item.month ?? 1;
-    return new Intl.DateTimeFormat('es-PE', { month: 'long' }).format(new Date(2026, month - 1, 1));
+    if (item.periodo !== undefined && item.periodo !== null) {
+      return `Periodo ${item.periodo}`;
+    }
+    if (item.anio !== undefined && item.anio !== null) {
+      return `Anio ${item.anio}`;
+    }
+    return 'Sin etiqueta';
   }
 
-  barWidth(item: MonthlyMetric, kind: 'sales' | 'gain'): number {
-    const max = kind === 'sales' ? this.monthlyMax() : this.gainMax();
-    const value = kind === 'sales' ? Number(item.totalVentas ?? item.total_ventas ?? 0) : Number(item.ganancia ?? 0);
+  barWidth(item: PeriodSummary, kind: 'sales' | 'gain'): number {
+    const max = kind === 'sales' ? this.salesMax() : this.gainMax();
+    const value = Number(item.valor ?? 0);
     return (value / max) * 100;
   }
 
-  metricValue(item: MonthlyMetric, kind: 'sales' | 'gain'): number {
-    return kind === 'sales' ? Number(item.totalVentas ?? item.total_ventas ?? 0) : Number(item.ganancia ?? 0);
+  metricValue(item: PeriodSummary): number {
+    return Number(item.valor ?? 0);
   }
 
   pageRangeLabel(): string {
@@ -256,6 +403,68 @@ export class ReportesPageComponent {
     this.loadPage('Actualizando historial...');
   }
 
+  updateGrouping(value: string): void {
+    const option = this.groupingOptions.find((item) => item.value === value);
+    if (option) {
+      this.selectedGrouping.set(option.value);
+    }
+  }
+
+  groupingLabel(value: ReportPeriodGrouping): string {
+    return this.groupingOptions.find((item) => item.value === value)?.label ?? value;
+  }
+
+  inventoryStock(item: InventoryAlert): string {
+    const stockActual = item.stockActual ?? item.stock_actual ?? 0;
+    const stockMinimo = item.stockMinimo ?? item.stock_minimo ?? 0;
+    return `${stockActual} disponibles · minimo ${stockMinimo}`;
+  }
+
+  expiringDate(item: ExpiringProduct): string {
+    return item.fechaVencimiento ?? item.fecha_vencimiento ?? 'Sin fecha';
+  }
+
+  expiringDays(item: ExpiringProduct): string {
+    const days = item.diasParaVencer ?? item.dias_para_vencer;
+    if (days === undefined || days === null) {
+      return 'Sin dato';
+    }
+    return `${days} dias`;
+  }
+
+  private parseReportData(report: ReporteDTO): ReportDataMap | null {
+    if (!report.datos) {
+      return null;
+    }
+
+    try {
+      const parsed = JSON.parse(report.datos);
+      return parsed && typeof parsed === 'object' ? (parsed as ReportDataMap) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  private toNumericValue(value: unknown): number | null {
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      return value;
+    }
+    if (typeof value === 'string' && value.trim()) {
+      const parsed = Number(value);
+      return Number.isFinite(parsed) ? parsed : null;
+    }
+    return null;
+  }
+
+  private currencyValue(value: number): string {
+    return new Intl.NumberFormat('es-PE', {
+      style: 'currency',
+      currency: 'PEN',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(value);
+  }
+
   private toApiDate(value: string): string {
     const [year, month, day] = value.split('-');
     return `${day}/${month}/${year}`;
@@ -280,5 +489,9 @@ export class ReportesPageComponent {
 
   private finishActionLoading(): void {
     this.actionLoading.set(false);
+  }
+
+  private resolveSummaryYear(): number | undefined {
+    return this.yearRequired() ? this.selectedYear() : undefined;
   }
 }

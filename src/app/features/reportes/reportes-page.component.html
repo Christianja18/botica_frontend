@@ -1,10 +1,11 @@
 <section class="page-shell">
   <header class="surface page-hero">
-    <p class="page-kicker">Analítica y control</p>
+    <p class="page-kicker">Analitica y control</p>
     <h1 class="page-title">Reportes</h1>
-    <p class="page-description">Genera reportes de ventas e inventario y revisa el historial.</p>
+    <p class="page-description">Genera reportes de ventas e inventario, y revisa el estado actual antes de emitirlos.</p>
     <div class="page-toolbar">
       <span class="pill">{{ reportesTotalElements() }} reportes almacenados</span>
+      <span class="pill">Ventas {{ summarySectionTitle() }}: {{ totalSalesSummary() | currency: 'PEN':'symbol':'1.2-2' }}</span>
       <button
         class="btn btn-ghost btn-icon-only"
         type="button"
@@ -22,78 +23,140 @@
     <div class="banner banner-error">{{ errorMessage() }}</div>
   }
 
+  <section class="stat-grid report-stat-grid">
+    <article class="surface stat-card">
+      <p class="muted">Stock bajo</p>
+      <h2 class="stat-value">{{ inventarioBajo().length }}</h2>
+      <p class="muted">Productos que ya requieren reposicion.</p>
+    </article>
+    <article class="surface stat-card">
+      <p class="muted">Por vencer</p>
+      <h2 class="stat-value">{{ porVencer().length }}</h2>
+      <p class="muted">Alertas operativas para los proximos 30 dias.</p>
+    </article>
+    <article class="surface stat-card">
+      <p class="muted">Vencidos</p>
+      <h2 class="stat-value">{{ vencidos().length }}</h2>
+      <p class="muted">Productos que conviene retirar o revisar.</p>
+    </article>
+    <article class="surface stat-card">
+      <p class="muted">Ultimo corte</p>
+      <h2 class="stat-value stat-value-sm">{{ latestSalesLabel() }}</h2>
+      <p class="muted">Ganancia: {{ totalGainSummary() | currency: 'PEN':'symbol':'1.2-2' }}</p>
+    </article>
+  </section>
+
   <section class="split-layout">
     <article class="surface panel">
       <div class="panel-header">
         <div>
-          <h2 class="panel-title">Generar reporte de ventas</h2>
-          <p class="panel-subtitle">Selecciona las fechas y el responsable del reporte.</p>
+          <h2 class="panel-title">Generar reportes</h2>
+          <p class="panel-subtitle">Usa rangos rapidos para ventas o emite un estado actual de inventario.</p>
         </div>
       </div>
-      <form class="report-form" [formGroup]="salesForm" (ngSubmit)="createSalesReport()">
-        <div class="form-grid report-form-grid">
-          <label class="field">
-            <span class="field-label">Fecha inicio</span>
-            <input class="field-control" type="date" formControlName="fechaInicio" [max]="todayIso" />
-            @if (salesForm.controls.fechaInicio.touched && salesForm.controls.fechaInicio.hasError('maxIsoDate')) {
-              <span class="field-error">La fecha inicio no puede ser posterior a hoy.</span>
-            }
-          </label>
-          <label class="field">
-            <span class="field-label">Fecha fin</span>
-            <input class="field-control" type="date" formControlName="fechaFin" [max]="todayIso" />
-            @if (salesForm.controls.fechaFin.touched && salesForm.controls.fechaFin.hasError('maxIsoDate')) {
-              <span class="field-error">La fecha fin no puede ser posterior a hoy.</span>
-            }
-          </label>
-          <label class="field">
-            <span class="field-label">Generado por</span>
-            <select class="field-control" formControlName="idUsuario">
-              <option [ngValue]="null">Selecciona un usuario</option>
-              @for (usuario of usuarios(); track usuario.idUsuario) {
-                <option [ngValue]="usuario.idUsuario">{{ usuario.nombre }} {{ usuario.apellido }}</option>
-              }
-            </select>
-          </label>
-        </div>
-        <div class="form-actions report-actions">
-          <button class="btn btn-primary" type="submit" [disabled]="generating()">
-            {{ generating() ? 'Generando...' : 'Generar ventas' }}
-          </button>
-        </div>
-      </form>
 
-      <div class="panel-header inventory-block">
-        <div>
-          <h2 class="panel-title">Generar reporte de inventario</h2>
-          <p class="panel-subtitle">Consulta inmediata del inventario y productos con stock bajo.</p>
+      <section class="report-block">
+        <div class="block-heading">
+          <div>
+            <p class="block-kicker">Ventas</p>
+            <h3 class="panel-title panel-title-sm">Reporte de ventas</h3>
+          </div>
+          <p class="muted">Define un rango y el responsable que deja trazabilidad del reporte.</p>
         </div>
-      </div>
-      <form class="report-form" [formGroup]="inventoryForm" (ngSubmit)="createInventoryReport()">
-        <div class="form-grid report-form-grid report-form-grid-single">
-          <label class="field">
-            <span class="field-label">Generado por</span>
-            <select class="field-control" formControlName="idUsuario">
-              <option [ngValue]="null">Selecciona un usuario</option>
-              @for (usuario of usuarios(); track usuario.idUsuario) {
-                <option [ngValue]="usuario.idUsuario">{{ usuario.nombre }} {{ usuario.apellido }}</option>
-              }
-            </select>
-          </label>
-        </div>
-        <div class="form-actions report-actions">
-          <button class="btn btn-secondary" type="submit" [disabled]="generating()">
-            {{ generating() ? 'Generando...' : 'Generar inventario' }}
+
+        <div class="quick-range-row">
+          @for (range of quickRanges; track range.id) {
+            <button
+              class="quick-range-btn"
+              type="button"
+              [class.active]="activeQuickRange() === range.id"
+              (click)="applyQuickRange(range.id)"
+            >
+              <strong>{{ range.label }}</strong>
+              <span>{{ range.hint }}</span>
+            </button>
+          }
+          <button class="quick-range-btn quick-range-btn-clear" type="button" (click)="clearSalesDates()">
+            <strong>Limpiar</strong>
+            <span>Elegir manualmente</span>
           </button>
         </div>
-      </form>
+
+        <form class="report-form" [formGroup]="salesForm" (ngSubmit)="createSalesReport()">
+          <div class="form-grid report-form-grid">
+            <label class="field">
+              <span class="field-label">Fecha inicio</span>
+              <input class="field-control" type="date" formControlName="fechaInicio" [max]="todayIso" />
+              @if (salesForm.controls.fechaInicio.touched && salesForm.controls.fechaInicio.hasError('maxIsoDate')) {
+                <span class="field-error">La fecha inicio no puede ser posterior a hoy.</span>
+              }
+            </label>
+            <label class="field">
+              <span class="field-label">Fecha fin</span>
+              <input class="field-control" type="date" formControlName="fechaFin" [max]="todayIso" />
+              @if (salesForm.controls.fechaFin.touched && salesForm.controls.fechaFin.hasError('maxIsoDate')) {
+                <span class="field-error">La fecha fin no puede ser posterior a hoy.</span>
+              }
+            </label>
+            <label class="field">
+              <span class="field-label">Generado por</span>
+              <select class="field-control" formControlName="idUsuario">
+                <option [ngValue]="null">Selecciona un usuario</option>
+                @for (usuario of usuarios(); track usuario.idUsuario) {
+                  <option [ngValue]="usuario.idUsuario">{{ usuario.nombre }} {{ usuario.apellido }}</option>
+                }
+              </select>
+            </label>
+          </div>
+          <div class="form-actions report-actions">
+            <button class="btn btn-primary" type="submit" [disabled]="generating()">
+              {{ generating() ? 'Generando...' : 'Generar ventas' }}
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <section class="report-block report-block-secondary">
+        <div class="block-heading">
+          <div>
+            <p class="block-kicker">Inventario</p>
+            <h3 class="panel-title panel-title-sm">Reporte de inventario</h3>
+          </div>
+          <p class="muted">Ideal para emitir un corte rapido con foco en stock bajo.</p>
+        </div>
+
+        <div class="alert-chip-row">
+          <span class="pill">Stock bajo: {{ inventarioBajo().length }}</span>
+          <span class="pill">Por vencer: {{ porVencer().length }}</span>
+          <span class="pill">Vencidos: {{ vencidos().length }}</span>
+        </div>
+
+        <form class="report-form" [formGroup]="inventoryForm" (ngSubmit)="createInventoryReport()">
+          <div class="form-grid report-form-grid report-form-grid-single">
+            <label class="field">
+              <span class="field-label">Generado por</span>
+              <select class="field-control" formControlName="idUsuario">
+                <option [ngValue]="null">Selecciona un usuario</option>
+                @for (usuario of usuarios(); track usuario.idUsuario) {
+                  <option [ngValue]="usuario.idUsuario">{{ usuario.nombre }} {{ usuario.apellido }}</option>
+                }
+              </select>
+            </label>
+          </div>
+          <div class="form-actions report-actions">
+            <button class="btn btn-secondary" type="submit" [disabled]="generating()">
+              {{ generating() ? 'Generando...' : 'Generar inventario' }}
+            </button>
+          </div>
+        </form>
+      </section>
     </article>
 
     <article class="surface panel">
       <div class="panel-header">
         <div>
           <h2 class="panel-title">Historial de reportes</h2>
-          <p class="panel-subtitle">Consulta los reportes generados.</p>
+          <p class="panel-subtitle">Cada registro muestra el tipo, el responsable y un resumen legible del contenido.</p>
         </div>
         <div class="history-toolbar">
           <span class="pill">Pagina {{ reportesPage() + 1 }} de {{ reportesTotalPages() }}</span>
@@ -112,17 +175,20 @@
           </label>
         </div>
       </div>
+
       @if (loading()) {
         <div class="empty-state"><strong>Cargando reportes...</strong></div>
       } @else if (!reportes().length) {
-        <div class="empty-state">No hay reportes generados todavía.</div>
+        <div class="empty-state">No hay reportes generados todavia.</div>
       } @else {
-        <div class="mini-list">
+        <div class="mini-list history-list">
           @for (report of reportes(); track report.idReporte) {
-            <article class="surface order-card">
-              <div class="panel-header">
-                <div>
-                  <span class="pill">{{ report.tipoReporte }}</span>
+            <article class="surface order-card report-history-card">
+              <div class="panel-header report-card-header">
+                <div class="report-card-copy">
+                  <span class="pill report-type-pill" [class.sales]="reportTypeClass(report.tipoReporte) === 'sales'">
+                    {{ reportTypeLabel(report.tipoReporte) }}
+                  </span>
                   <h3 class="panel-title">Reporte #{{ report.idReporte }}</h3>
                   <p class="panel-subtitle">{{ report.fechaGeneracion || 'Sin fecha' }} · {{ reportOwner(report.generadoPor) }}</p>
                 </div>
@@ -137,13 +203,28 @@
                   <span class="sr-only">Eliminar reporte</span>
                 </button>
               </div>
-              <p class="muted">{{ reportDataPreview(report) }}</p>
+
+              <p class="report-summary">{{ reportSummary(report) }}</p>
+
+              @if (reportMetrics(report).length) {
+                <div class="metric-chip-row">
+                  @for (metric of reportMetrics(report); track metric) {
+                    <span class="metric-chip">{{ metric }}</span>
+                  }
+                </div>
+              }
+
+              @if (reportWindow(report); as range) {
+                <p class="muted">Rango consultado: {{ range }}</p>
+              }
+
               @if (report.archivoPath) {
                 <p class="muted">Archivo: {{ report.archivoPath }}</p>
               }
             </article>
           }
         </div>
+
         <div class="pagination-bar">
           <div class="pagination-info">
             <strong>Pagina {{ reportesPage() + 1 }} de {{ reportesTotalPages() }}</strong>
@@ -178,37 +259,90 @@
     </article>
   </section>
 
+  <section class="surface panel summary-panel">
+    <div class="panel-header">
+      <div>
+        <h2 class="panel-title">Resumen analitico</h2>
+        <p class="panel-subtitle">Consulta ventas y ganancias con la agrupacion que mas te ayude a decidir.</p>
+      </div>
+      <div class="summary-toolbar">
+        <label class="pagination-size">
+          <span>Agrupar</span>
+          <select
+            class="field-control summary-select"
+            [ngModel]="selectedGrouping()"
+            [ngModelOptions]="{ standalone: true }"
+            (ngModelChange)="updateGrouping($event)"
+          >
+            @for (option of groupingOptions; track option.value) {
+              <option [ngValue]="option.value">{{ option.label }}</option>
+            }
+          </select>
+        </label>
+        @if (yearRequired()) {
+          <label class="pagination-size year-field">
+            <span>Anio</span>
+            <input
+              class="field-control summary-year-input"
+              type="number"
+              min="2000"
+              max="2100"
+              [ngModel]="selectedYear()"
+              [ngModelOptions]="{ standalone: true }"
+              (ngModelChange)="selectedYear.set(+$event)"
+            />
+          </label>
+        }
+        <button class="btn btn-secondary" type="button" (click)="applySummaryFilters()">Aplicar</button>
+      </div>
+    </div>
+  </section>
+
   <section class="card-grid">
     <article class="surface panel">
-      <h2 class="panel-title">Ventas mensuales</h2>
+      <div class="panel-header panel-header-tight">
+        <div>
+          <h2 class="panel-title">Ventas {{ summarySectionTitle() }}</h2>
+          <p class="panel-subtitle">Total acumulado: {{ totalSalesSummary() | currency: 'PEN':'symbol':'1.2-2' }}</p>
+        </div>
+      </div>
       <div class="bar-list">
-        @for (item of ventasMensuales(); track monthLabel(item)) {
+        @for (item of ventasResumen(); track periodLabel(item)) {
           <article class="bar-row">
             <div class="bar-meta">
-              <strong>{{ monthLabel(item) }}</strong>
-              <span>{{ metricValue(item, 'sales') | currency: 'PEN':'symbol':'1.2-2' }}</span>
+              <strong>{{ periodLabel(item) }}</strong>
+              <span>{{ metricValue(item) | currency: 'PEN':'symbol':'1.2-2' }}</span>
             </div>
             <div class="bar-track">
               <div class="bar-fill" [style.width.%]="barWidth(item, 'sales')"></div>
             </div>
           </article>
+        } @empty {
+          <div class="empty-state compact-empty">No hay ventas para la agrupacion elegida.</div>
         }
       </div>
     </article>
 
     <article class="surface panel">
-      <h2 class="panel-title">Ganancias mensuales</h2>
+      <div class="panel-header panel-header-tight">
+        <div>
+          <h2 class="panel-title">Ganancias {{ summarySectionTitle() }}</h2>
+          <p class="panel-subtitle">Total acumulado: {{ totalGainSummary() | currency: 'PEN':'symbol':'1.2-2' }}</p>
+        </div>
+      </div>
       <div class="bar-list">
-        @for (item of gananciasMensuales(); track monthLabel(item)) {
+        @for (item of gananciasResumen(); track periodLabel(item)) {
           <article class="bar-row">
             <div class="bar-meta">
-              <strong>{{ monthLabel(item) }}</strong>
-              <span>{{ metricValue(item, 'gain') | currency: 'PEN':'symbol':'1.2-2' }}</span>
+              <strong>{{ periodLabel(item) }}</strong>
+              <span>{{ metricValue(item) | currency: 'PEN':'symbol':'1.2-2' }}</span>
             </div>
             <div class="bar-track">
               <div class="bar-fill" [style.width.%]="barWidth(item, 'gain')"></div>
             </div>
           </article>
+        } @empty {
+          <div class="empty-state compact-empty">No hay ganancias para la agrupacion elegida.</div>
         }
       </div>
     </article>

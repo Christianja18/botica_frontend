@@ -15,6 +15,11 @@ export const categoriasPageConfig: ResourcePageConfig = {
     sortBy: 'idCategoria',
     direction: 'asc',
   },
+  importExport: {
+    enabled: true,
+    defaultFormat: 'csv',
+    formats: ['csv', 'excel'],
+  },
   columns: [
     { key: 'nombre', label: 'Nombre' },
     { key: 'descripcion', label: 'Descripcion' },

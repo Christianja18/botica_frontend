@@ -60,6 +60,11 @@ export const detallesPedidoPageConfig: ResourcePageConfig = {
     sortBy: 'idDetalle',
     direction: 'desc',
   },
+  importExport: {
+    enabled: true,
+    defaultFormat: 'csv',
+    formats: ['csv', 'excel'],
+  },
   columns: [
     { key: 'idPedido', label: 'Pedido', type: 'lookup', lookup: pedidoLookup },
     { key: 'idProducto', label: 'Producto', type: 'lookup', lookup: productoLookup },

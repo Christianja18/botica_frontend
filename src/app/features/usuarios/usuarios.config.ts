@@ -15,6 +15,11 @@ export const usuariosPageConfig: ResourcePageConfig = {
     sortBy: 'idUsuario',
     direction: 'asc',
   },
+  importExport: {
+    enabled: true,
+    defaultFormat: 'csv',
+    formats: ['csv', 'excel'],
+  },
   columns: [
     { key: 'nombre', label: 'Nombre' },
     { key: 'apellido', label: 'Apellido' },

@@ -78,11 +78,31 @@ export interface ResourcePageConfig {
     sortBy?: string;
     direction?: 'asc' | 'desc';
   };
+  importExport?: {
+    enabled: boolean;
+    defaultFormat?: 'csv' | 'excel';
+    formats?: Array<'csv' | 'excel'>;
+  };
+}
+
+export interface ImportResult {
+  recurso?: string;
+  formato?: string;
+  totalFilas?: number;
+  insertados?: number;
+  actualizados?: number;
+  fallidos?: number;
+  errores?: Array<{
+    fila?: number;
+    mensaje?: string;
+  }>;
 }
 
 export interface CrudPageService<TItem = unknown, TPayload = unknown> {
   list(): Observable<TItem[]>;
   listPage?(query: PageQueryParams): Observable<PageResponse<TItem>>;
+  exportData?(format: 'csv' | 'excel'): Observable<unknown>;
+  importData?(format: 'csv' | 'excel', file: File): Observable<ImportResult>;
   create(payload: TPayload): Observable<TItem>;
   update(id: number, payload: TPayload): Observable<TItem>;
   delete(id: number): Observable<void>;

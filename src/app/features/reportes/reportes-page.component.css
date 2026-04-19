@@ -2,18 +2,107 @@
   display: block;
 }
 
-.inventory-block {
-  margin-top: 1.5rem;
+.report-stat-grid {
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+
+.stat-value-sm {
+  font-size: 1.35rem;
+  line-height: 1.2;
+}
+
+.summary-panel {
+  margin-top: 1.25rem;
+}
+
+.panel-header-tight {
+  margin-bottom: 0.85rem;
+}
+
+.report-block + .report-block {
+  margin-top: 1.75rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid rgba(148, 163, 184, 0.16);
+}
+
+.block-heading {
+  display: grid;
+  gap: 0.45rem;
+  margin-bottom: 1rem;
+}
+
+.block-kicker {
+  margin: 0 0 0.3rem;
+  color: var(--accent-primary-strong);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.panel-title-sm {
+  font-size: 1.45rem;
+}
+
+.quick-range-row,
+.alert-chip-row,
+.metric-chip-row {
+  display: flex;
+  gap: 0.7rem;
+  flex-wrap: wrap;
+}
+
+.quick-range-row {
+  margin-bottom: 1rem;
+}
+
+.quick-range-btn {
+  display: grid;
+  gap: 0.18rem;
+  min-width: 10rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid rgba(33, 78, 165, 0.12);
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.84);
+  text-align: left;
+  transition:
+    transform var(--transition-base),
+    border-color var(--transition-base),
+    box-shadow var(--transition-base);
+}
+
+.quick-range-btn strong {
+  color: var(--text-main);
+}
+
+.quick-range-btn span {
+  color: var(--text-muted);
+  font-size: 0.84rem;
+}
+
+.quick-range-btn:hover,
+.quick-range-btn.active {
+  transform: translateY(-1px);
+  border-color: rgba(33, 78, 165, 0.26);
+  box-shadow: 0 14px 28px rgba(33, 78, 165, 0.08);
+}
+
+.quick-range-btn.active {
+  background: linear-gradient(135deg, rgba(103, 211, 196, 0.22), rgba(255, 255, 255, 0.96));
+}
+
+.quick-range-btn-clear {
+  background: rgba(244, 247, 250, 0.9);
 }
 
 .report-form {
   display: grid;
-  gap: 1.1rem;
+  gap: 1rem;
 }
 
 .report-form-grid {
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 1rem 1.25rem;
+  gap: 1rem 1.2rem;
   align-items: start;
 }
 
@@ -22,12 +111,13 @@
 }
 
 .report-actions {
-  margin-top: 0.35rem;
+  margin-top: 0.2rem;
 }
 
 .history-toolbar,
 .pagination-bar,
-.pagination-controls {
+.pagination-controls,
+.summary-toolbar {
   display: flex;
   gap: 0.68rem;
   align-items: center;
@@ -37,6 +127,46 @@
 .history-toolbar,
 .pagination-bar {
   justify-content: space-between;
+}
+
+.history-list {
+  gap: 1rem;
+}
+
+.report-history-card {
+  padding: 1.2rem 1.25rem;
+}
+
+.report-card-header {
+  margin-bottom: 0.8rem;
+}
+
+.report-card-copy {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.report-type-pill.sales {
+  background: rgba(33, 78, 165, 0.12);
+}
+
+.report-summary {
+  margin: 0 0 0.75rem;
+  font-size: 0.98rem;
+  font-weight: 700;
+  line-height: 1.6;
+}
+
+.metric-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.9rem;
+  padding: 0.3rem 0.72rem;
+  border-radius: 999px;
+  background: rgba(22, 102, 68, 0.1);
+  color: #166644;
+  font-size: 0.82rem;
+  font-weight: 700;
 }
 
 .pagination-bar {
@@ -95,10 +225,24 @@
   font-weight: 700;
 }
 
-.pagination-controls .btn {
-  min-height: 2.25rem;
-  padding: 0.55rem 0.92rem;
-  font-size: 0.84rem;
+.summary-select {
+  width: 8.8rem;
+  min-width: 8.8rem;
+  max-width: 8.8rem;
+}
+
+.year-field {
+  gap: 0.45rem;
+}
+
+.summary-year-input {
+  width: 5.4rem;
+  min-width: 5.4rem;
+  max-width: 5.4rem;
+}
+
+.compact-empty {
+  min-height: 8rem;
 }
 
 .saving-overlay {
@@ -141,18 +285,9 @@
     grid-template-columns: 1fr;
   }
 
+  .summary-toolbar,
   .history-toolbar,
   .pagination-bar {
     align-items: stretch;
-  }
-
-  .pagination-size {
-    width: auto;
-    align-self: flex-start;
-  }
-
-  .pagination-controls,
-  .pagination-controls .btn {
-    width: 100%;
   }
 }

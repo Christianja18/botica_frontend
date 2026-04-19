@@ -2,6 +2,32 @@
   display: block;
 }
 
+.transfer-controls {
+  display: flex;
+  gap: 0.65rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.toolbar-select {
+  width: 5.2rem;
+  min-width: 5.2rem;
+  max-width: 5.2rem;
+  flex-basis: 5.2rem;
+}
+
+.visually-hidden-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 .banner-success {
   background: rgba(22, 163, 74, 0.12);
   color: #166534;
@@ -150,6 +176,10 @@
 @media (max-width: 720px) {
   .field-inline-picker {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .transfer-controls {
+    width: 100%;
   }
 
   .pagination-bar {

@@ -53,6 +53,11 @@ export const boletasPageConfig: ResourcePageConfig = {
     sortBy: 'idBoleta',
     direction: 'desc',
   },
+  importExport: {
+    enabled: true,
+    defaultFormat: 'csv',
+    formats: ['csv', 'excel'],
+  },
   columns: [
     { key: 'numeroBoleta', label: 'Numero' },
     { key: 'idPedido', label: 'Pedido', type: 'lookup', lookup: pedidoLookup },
