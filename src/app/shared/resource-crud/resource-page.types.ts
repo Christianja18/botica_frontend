@@ -24,11 +24,23 @@ export interface ResourceCreateValueContext {
   items: Record<string, unknown>[];
 }
 
+export interface FieldUsedValuesConfig {
+  resource: CrudResourceKey;
+  valueKey: string;
+  hideUsedOnCreate?: boolean;
+}
+
 export interface ResourceColumnConfig {
   key: string;
   label: string;
   type?: 'text' | 'boolean' | 'date' | 'datetime' | 'currency' | 'lookup' | 'json';
   lookup?: LookupConfig;
+  renderLines?: (item: Record<string, unknown>, context: ResourceColumnRenderContext) => string[];
+}
+
+export interface ResourceColumnRenderContext {
+  lookupLabel: (lookup: LookupConfig | undefined, value: unknown) => string;
+  lookupOption: (lookup: LookupConfig | undefined, value: unknown) => Record<string, unknown> | undefined;
 }
 
 export interface ResourceFieldConfig {
@@ -59,6 +71,7 @@ export interface ResourceFieldConfig {
   selectionQueryParam?: string;
   hiddenInForm?: boolean;
   helpText?: string;
+  usedValues?: FieldUsedValuesConfig;
 }
 
 export interface ResourcePageConfig {

@@ -64,6 +64,7 @@ export class ResourcePageComponent implements OnInit, OnDestroy {
   readonly pickerSearchTerm = signal('');
   readonly items = signal<Record<string, unknown>[]>([]);
   readonly lookupOptions = signal<Record<string, Record<string, unknown>[]>>({});
+  readonly usedFieldValues = signal<Record<string, string[]>>({});
   readonly currentPage = signal(0);
   readonly pageSize = signal(5);
   readonly totalPages = signal(1);
@@ -97,17 +98,24 @@ export class ResourcePageComponent implements OnInit, OnDestroy {
 
     const options = this.lookupOptions()[field.lookup.resource] ?? [];
     const term = this.pickerSearchTerm().trim().toLowerCase();
-    if (!term) {
-      return options;
-    }
-
-    return options.filter((option) => {
+    const matchedOptions = !term
+      ? options
+      : options.filter((option) => {
       const label = this.lookupOptionLabel(field.lookup!, option).toLowerCase();
       if (label.includes(term)) {
         return true;
       }
 
       return Object.values(option).some((value) => String(value ?? '').toLowerCase().includes(term));
+      });
+
+    return [...matchedOptions].sort((left, right) => {
+      const leftBlocked = this.isLookupOptionBlocked(field, left);
+      const rightBlocked = this.isLookupOptionBlocked(field, right);
+      if (leftBlocked === rightBlocked) {
+        return 0;
+      }
+      return leftBlocked ? 1 : -1;
     });
   });
 
@@ -221,10 +229,12 @@ export class ResourcePageComponent implements OnInit, OnDestroy {
     forkJoin({
       itemsPage: this.loadItemsPage(),
       lookups: this.loadLookups(),
+      usedFieldValues: this.loadFieldUsedValues(),
     }).subscribe({
-      next: ({ itemsPage, lookups }) => {
+      next: ({ itemsPage, lookups, usedFieldValues }) => {
         this.items.set(itemsPage.content);
         this.lookupOptions.set(lookups);
+        this.usedFieldValues.set(usedFieldValues);
         this.totalElements.set(itemsPage.totalElements);
         this.totalPages.set(Math.max(itemsPage.totalPages, 1));
         this.currentPage.set(itemsPage.page);
@@ -413,14 +423,52 @@ export class ResourcePageComponent implements OnInit, OnDestroy {
     return formatResourceValue(item, column, this.lookupLabel.bind(this));
   }
 
+  columnDisplayLines(item: Record<string, unknown>, column: ResourceColumnConfig): string[] {
+    if (column.renderLines) {
+      const lines = column.renderLines(item, {
+        lookupLabel: this.lookupLabel.bind(this),
+        lookupOption: this.lookupOption.bind(this),
+      })
+        .map((line) => String(line ?? '').trim())
+        .filter(Boolean);
+      return lines.length ? lines : ['-'];
+    }
+
+    return [this.formatValue(item, column)];
+  }
+
+  columnDisplayTitle(item: Record<string, unknown>, column: ResourceColumnConfig): string {
+    return this.columnDisplayLines(item, column).join(' · ');
+  }
+
+  isRichTextColumn(column: ResourceColumnConfig): boolean {
+    const key = column.key.toLowerCase();
+    return Boolean(column.renderLines)
+      || column.type === 'lookup'
+      || column.type === 'json'
+      || key.includes('descripcion')
+      || key.includes('direccion')
+      || key.includes('producto')
+      || key.includes('proveedor')
+      || key.includes('cliente');
+  }
+
   lookupLabel(lookup: LookupConfig | undefined, value: unknown): string {
     if (!lookup) {
       return String(value ?? '-');
     }
 
-    const options = this.lookupOptions()[lookup.resource] ?? [];
-    const match = options.find((option) => String(option[lookup.valueKey]) === String(value));
+    const match = this.lookupOption(lookup, value);
     return match ? this.lookupOptionLabel(lookup, match) : String(value ?? '-');
+  }
+
+  lookupOption(lookup: LookupConfig | undefined, value: unknown): Record<string, unknown> | undefined {
+    if (!lookup) {
+      return undefined;
+    }
+
+    const options = this.lookupOptions()[lookup.resource] ?? [];
+    return options.find((option) => String(option[lookup.valueKey]) === String(value));
   }
 
   lookupOptionLabel(lookup: LookupConfig, option: Record<string, unknown>): string {
@@ -630,6 +678,11 @@ export class ResourcePageComponent implements OnInit, OnDestroy {
       return;
     }
 
+    if (this.isLookupOptionBlocked(field, option)) {
+      this.errorMessage.set(`El ${field.label.toLowerCase()} seleccionado ya se encuentra registrado.`);
+      return;
+    }
+
     const control = this.form.controls[field.key];
     if (!control) {
       return;
@@ -654,6 +707,15 @@ export class ResourcePageComponent implements OnInit, OnDestroy {
       .map(([, value], index, entries) => formatPickerMetaValue(entries[index][0], value))
       .filter((value) => value !== label)
       .slice(0, 3);
+  }
+
+  availableLookupOptions(field: ResourceFieldConfig): Record<string, unknown>[] {
+    const options = field.lookup ? (this.lookupOptions()[field.lookup.resource] ?? []) : [];
+    if (!field.usedValues || this.editingId() || !field.usedValues.hideUsedOnCreate) {
+      return options;
+    }
+
+    return options.filter((option) => !this.isLookupOptionBlocked(field, option));
   }
 
   private buildForm(): void {
@@ -781,6 +843,32 @@ export class ResourcePageComponent implements OnInit, OnDestroy {
           lookup.resource,
           this.lookupApi.list<Record<string, unknown>>(lookup.resource),
         ]),
+      ),
+    );
+  }
+
+  private loadFieldUsedValues() {
+    const fieldsWithUsedValues = this.config().fields.filter((field) => field.usedValues);
+    if (!fieldsWithUsedValues.length) {
+      return of({});
+    }
+
+    const resources = Array.from(new Set(fieldsWithUsedValues.map((field) => field.usedValues!.resource)));
+    return forkJoin(
+      Object.fromEntries(resources.map((resource) => [resource, this.lookupApi.list<Record<string, unknown>>(resource)])),
+    ).pipe(
+      map((resourceMap) =>
+        Object.fromEntries(
+          fieldsWithUsedValues.map((field) => {
+            const config = field.usedValues!;
+            const values = (resourceMap[config.resource] ?? [])
+              .map((item) => item[config.valueKey])
+              .filter((value) => value !== null && value !== undefined && value !== '')
+              .map((value) => String(value));
+
+            return [field.key, Array.from(new Set(values))];
+          }),
+        ),
       ),
     );
   }
@@ -917,6 +1005,25 @@ export class ResourcePageComponent implements OnInit, OnDestroy {
       default:
         return value;
     }
+  }
+
+  isLookupOptionBlocked(field: ResourceFieldConfig, option: Record<string, unknown>): boolean {
+    if (!field.lookup || !field.usedValues) {
+      return false;
+    }
+
+    const optionValue = option[field.lookup.valueKey];
+    if (optionValue === null || optionValue === undefined || optionValue === '') {
+      return false;
+    }
+
+    const currentValue = this.form.controls[field.key]?.value;
+    if (this.editingId() && String(currentValue ?? '') === String(optionValue)) {
+      return false;
+    }
+
+    const blockedValues = this.usedFieldValues()[field.key] ?? [];
+    return blockedValues.includes(String(optionValue));
   }
 
   private startActionLoading(message: string): void {

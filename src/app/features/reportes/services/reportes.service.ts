@@ -3,7 +3,7 @@ import { Injectable } from '@angular/core';
 import { map, Observable } from 'rxjs';
 
 import { GenericCrudService } from '../../../core/services/http';
-import { ExpiringProduct, InventoryAlert, MonthlyMetric, PeriodSummary, ReportPeriodGrouping, ReporteDTO } from '../models';
+import { BestSellingProduct, ExpiringProduct, InventoryAlert, MonthlyMetric, PeriodSummary, ReportPeriodGrouping, ReporteDTO } from '../models';
 
 @Injectable({
   providedIn: 'root',
@@ -86,5 +86,9 @@ export class ReportesService extends GenericCrudService<ReporteDTO> {
 
   getProductosVencidos(): Observable<ExpiringProduct[]> {
     return this.get<ExpiringProduct[]>('reportes/productos-vencidos');
+  }
+
+  getProductosMasVendidos(): Observable<BestSellingProduct[]> {
+    return this.get<BestSellingProduct[]>('reportes/productos-mas-vendidos');
   }
 }

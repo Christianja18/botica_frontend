@@ -1,5 +1,14 @@
 import { ResourceCreateValueContext, ResourcePageConfig } from '../../shared/resource-crud/resource-page.types';
 
+function formatCurrency(value: unknown): string {
+  return new Intl.NumberFormat('es-PE', {
+    style: 'currency',
+    currency: 'PEN',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(Number(value ?? 0));
+}
+
 function nextBoletaNumber({ items }: ResourceCreateValueContext): string {
   const lastNumber = items.reduce((max, item) => {
     const current = String(item['numeroBoleta'] ?? '').trim();
@@ -21,12 +30,7 @@ function pedidoLookupLabel(option: Record<string, unknown>): string {
   const total = Number(option['total'] ?? 0);
   const cliente = option['cliente'] as Record<string, unknown> | undefined;
   const clienteNombre = [cliente?.['nombre'], cliente?.['apellido']].filter(Boolean).join(' ').trim();
-  const totalLabel = new Intl.NumberFormat('es-PE', {
-    style: 'currency',
-    currency: 'PEN',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(total);
+  const totalLabel = formatCurrency(total);
 
   return [`Pedido #${idPedido}`, clienteNombre || null, fechaPedido, estado, totalLabel].filter(Boolean).join(' · ');
 }
@@ -60,7 +64,28 @@ export const boletasPageConfig: ResourcePageConfig = {
   },
   columns: [
     { key: 'numeroBoleta', label: 'Numero' },
-    { key: 'idPedido', label: 'Pedido', type: 'lookup', lookup: pedidoLookup },
+    {
+      key: 'idPedido',
+      label: 'Pedido',
+      type: 'lookup',
+      lookup: pedidoLookup,
+      renderLines: (item, context) => {
+        const pedido = context.lookupOption(pedidoLookup, item['idPedido']);
+        const idPedido = item['idPedido'] ?? pedido?.['idPedido'] ?? '-';
+        const cliente = pedido?.['cliente'] as Record<string, unknown> | undefined;
+        const clienteNombre = [cliente?.['nombre'], cliente?.['apellido']].filter(Boolean).join(' ').trim();
+        const fechaPedido = String(pedido?.['fechaPedido'] ?? 'Sin fecha');
+        const estado = String(pedido?.['estado'] ?? 'Sin estado');
+        const total = pedido?.['total'] ?? 0;
+
+        return [
+          [`Pedido #${idPedido}`, clienteNombre || null].filter(Boolean).join(' · '),
+          fechaPedido,
+          estado,
+          formatCurrency(total),
+        ];
+      },
+    },
     { key: 'total', label: 'Total', type: 'currency' },
     { key: 'igv', label: 'IGV', type: 'currency' },
     { key: 'totalConIgv', label: 'Total + IGV', type: 'currency' },
@@ -88,7 +113,12 @@ export const boletasPageConfig: ResourcePageConfig = {
       pickerMode: 'modal',
       pickerButtonLabel: 'Buscar pedido',
       selectionQueryParam: 'pedidoSeleccionado',
-      helpText: 'Selecciona el pedido.',
+      helpText: 'Selecciona un pedido que todavia no tenga boleta registrada.',
+      usedValues: {
+        resource: 'boletas',
+        valueKey: 'idPedido',
+        hideUsedOnCreate: true,
+      },
     },
     { key: 'total', label: 'Total', type: 'currency', hiddenInForm: true },
     { key: 'igv', label: 'IGV', type: 'currency', min: 0, integerDigits: 8, fractionDigits: 2, step: '0.01' },

@@ -191,8 +191,13 @@
                     <div class="field-inline-picker" [class.field-inline-picker-single]="!(field.pickerRoute || field.pickerMode === 'modal')">
                       <select class="field-control" [class.field-control-invalid]="controlInvalid(field.key)" [formControlName]="field.key">
                         <option value="">Selecciona una opcion</option>
-                        @for (option of lookupOptions()[field.lookup!.resource]; track $index) {
-                          <option [value]="option[field.lookup!.valueKey]">{{ lookupOptionLabel(field.lookup!, option) }}</option>
+                        @for (option of availableLookupOptions(field); track $index) {
+                          <option
+                            [value]="option[field.lookup!.valueKey]"
+                            [disabled]="isLookupOptionBlocked(field, option)"
+                          >
+                            {{ lookupOptionLabel(field.lookup!, option) }}
+                          </option>
                         }
                       </select>
                       @if (field.pickerRoute || field.pickerMode === 'modal') {
@@ -226,6 +231,8 @@
                     [formControlName]="field.key"
                     (input)="handleTextInput(field, $event); handleNumericInput(field, $event)"
                     [attr.maxlength]="field.maxLength ?? null"
+                    [attr.pattern]="field.pattern ?? null"
+                    [attr.inputmode]="field.inputFilter === 'digits' ? 'numeric' : null"
                     [step]="field.step ?? null"
                     [min]="field.min ?? null"
                     [attr.min]="fieldMinDate(field)"
@@ -319,7 +326,17 @@
               @for (item of filteredItems(); track item[config().idKey]) {
                 <tr>
                   @for (column of config().columns; track column.key) {
-                    <td>{{ formatValue(item, column) }}</td>
+                    <td>
+                      <div
+                        class="table-cell-content"
+                        [class.table-cell-content-rich]="isRichTextColumn(column)"
+                        [title]="columnDisplayTitle(item, column)"
+                      >
+                        @for (line of columnDisplayLines(item, column); track $index) {
+                          <span class="table-cell-line" [class.table-cell-line-secondary]="$index > 0">{{ line }}</span>
+                        }
+                      </div>
+                    </td>
                   }
                   <td>
                     <div class="button-row table-actions">
@@ -431,10 +448,19 @@
 
         <div class="picker-list picker-section">
           @for (option of filteredPickerOptions(); track $index) {
-            <button class="picker-card" type="button" (click)="selectLookupOption(option)">
+            <button
+              class="picker-card"
+              [class.picker-card-disabled]="isLookupOptionBlocked(pickerField, option)"
+              type="button"
+              [disabled]="isLookupOptionBlocked(pickerField, option)"
+              (click)="selectLookupOption(option)"
+            >
               <strong>{{ lookupOptionLabel(pickerField.lookup!, option) }}</strong>
               @for (meta of pickerOptionMeta(option); track $index) {
                 <span>{{ meta }}</span>
+              }
+              @if (isLookupOptionBlocked(pickerField, option)) {
+                <span class="picker-option-state">Ya registrado en inventario</span>
               }
             </button>
           }

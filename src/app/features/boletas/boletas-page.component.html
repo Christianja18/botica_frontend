@@ -52,8 +52,8 @@
           <div class="print-grid">
             @for (boleta of boletas(); track boleta.idBoleta) {
               <article class="surface ticket-card">
-                <div class="panel-header">
-                  <div>
+                <div class="panel-header ticket-header">
+                  <div class="ticket-header-copy">
                     <span class="pill">Boleta #{{ boleta.idBoleta }}</span>
                     <h3 class="panel-title">{{ boleta.numeroBoleta }}</h3>
                     <p class="panel-subtitle">{{ pedidoSummary(boleta) }}</p>

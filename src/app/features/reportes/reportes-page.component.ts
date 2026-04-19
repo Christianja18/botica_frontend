@@ -13,7 +13,7 @@ import {
 import { forkJoin } from 'rxjs';
 
 import { resolveApiError } from '../../core/services';
-import { ExpiringProduct, InventoryAlert, PeriodSummary, ReporteDTO, ReportPeriodGrouping } from './models';
+import { BestSellingProduct, ExpiringProduct, InventoryAlert, PeriodSummary, ReporteDTO, ReportPeriodGrouping } from './models';
 import { ReportesService } from './services';
 import { UsuarioDTO } from '../usuarios/models';
 import { UsuariosService } from '../usuarios/services';
@@ -90,6 +90,7 @@ export class ReportesPageComponent {
   readonly inventarioBajo = signal<InventoryAlert[]>([]);
   readonly porVencer = signal<ExpiringProduct[]>([]);
   readonly vencidos = signal<ExpiringProduct[]>([]);
+  readonly productosMasVendidos = signal<BestSellingProduct[]>([]);
   readonly selectedGrouping = signal<ReportPeriodGrouping>('mes');
   readonly selectedYear = signal(this.currentYear);
   readonly activeQuickRange = signal<QuickRangeId | null>('month');
@@ -130,6 +131,12 @@ export class ReportesPageComponent {
     const items = this.ventasResumen();
     return items.length ? this.periodLabel(items[items.length - 1]) : 'Sin datos';
   });
+  readonly productosMasVendidosMax = computed(() =>
+    Math.max(
+      1,
+      ...this.productosMasVendidos().map((item) => this.bestSellingQuantity(item)),
+    ),
+  );
   readonly historyCards = computed<ReportHistoryCard[]>(() =>
     this.reportes().map((report) => this.toHistoryCard(report)),
   );
@@ -160,6 +167,7 @@ export class ReportesPageComponent {
       inventarioBajo: this.reportesService.getInventarioBajo(),
       porVencer: this.reportesService.getProductosPorVencer(),
       vencidos: this.reportesService.getProductosVencidos(),
+      productosMasVendidos: this.reportesService.getProductosMasVendidos(),
     }).subscribe({
       next: (response) => {
         this.reportes.set(response.reportesPage.content);
@@ -173,6 +181,7 @@ export class ReportesPageComponent {
         this.inventarioBajo.set(response.inventarioBajo);
         this.porVencer.set(response.porVencer);
         this.vencidos.set(response.vencidos);
+        this.productosMasVendidos.set(response.productosMasVendidos);
         this.loading.set(false);
         this.finishActionLoading();
       },
@@ -524,6 +533,23 @@ export class ReportesPageComponent {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     }).format(value);
+  }
+
+  bestSellingQuantity(item: BestSellingProduct): number {
+    return Number(item.cantidadVendida ?? item.cantidad_vendida ?? 0);
+  }
+
+  bestSellingAmount(item: BestSellingProduct): number {
+    return Number(item.totalVendido ?? item.total_vendido ?? 0);
+  }
+
+  bestSellingCode(item: BestSellingProduct): string {
+    return item.codigoBarras ?? item.codigo_barras ?? 'Sin codigo';
+  }
+
+  bestSellingBarWidth(item: BestSellingProduct): number {
+    const max = this.productosMasVendidosMax();
+    return (this.bestSellingQuantity(item) / max) * 100;
   }
 
   private toApiDate(value: string): string {

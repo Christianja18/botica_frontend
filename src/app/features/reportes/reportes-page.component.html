@@ -44,6 +44,13 @@
       <h2 class="stat-value stat-value-sm">{{ latestSalesLabel() }}</h2>
       <p class="muted">Ganancia: {{ totalGainSummary() | currency: 'PEN':'symbol':'1.2-2' }}</p>
     </article>
+    <article class="surface stat-card">
+      <p class="muted">Top producto</p>
+      <h2 class="stat-value stat-value-sm">{{ productosMasVendidos().length ? productosMasVendidos()[0].nombre : 'Sin datos' }}</h2>
+      <p class="muted">
+        Unidades: {{ productosMasVendidos().length ? bestSellingQuantity(productosMasVendidos()[0]) : 0 }}
+      </p>
+    </article>
   </section>
 
   <section class="split-layout">
@@ -312,11 +319,44 @@
     <article class="surface panel">
       <div class="panel-header panel-header-tight">
         <div>
+          <h2 class="panel-title">Productos mas vendidos</h2>
+          <p class="panel-subtitle">Ranking basado en pedidos completados y totales vendidos.</p>
+        </div>
+      </div>
+      <div class="bar-list best-selling-scroll">
+        @for (item of productosMasVendidos(); track item.idProducto ?? item.id_producto ?? item.nombre) {
+          <article class="bar-row bar-row-rich">
+            <div class="bar-meta bar-meta-stacked">
+              <div>
+                <strong>{{ item.nombre }}</strong>
+                <p class="muted">{{ item.categoria ?? 'Sin categoria' }} · {{ bestSellingCode(item) }}</p>
+              </div>
+              <div class="bar-values">
+                <span>{{ bestSellingQuantity(item) }} uds.</span>
+                <span>{{ bestSellingAmount(item) | currency: 'PEN':'symbol':'1.2-2' }}</span>
+              </div>
+            </div>
+            <div class="bar-track">
+              <div class="bar-fill" [style.width.%]="bestSellingBarWidth(item)"></div>
+            </div>
+          </article>
+        } @empty {
+          <div class="empty-state compact-empty">No hay datos de productos vendidos todavia.</div>
+        }
+      </div>
+      @if (productosMasVendidos().length > 3) {
+        <p class="muted best-selling-footnote">Se muestran 3 productos por vista. Desplaza para ver el ranking completo.</p>
+      }
+    </article>
+
+    <article class="surface panel">
+      <div class="panel-header panel-header-tight">
+        <div>
           <h2 class="panel-title">Ventas {{ summarySectionTitle() }}</h2>
           <p class="panel-subtitle">Total acumulado: {{ totalSalesSummary() | currency: 'PEN':'symbol':'1.2-2' }}</p>
         </div>
       </div>
-      <div class="bar-list">
+      <div class="bar-list summary-scroll">
         @for (item of ventasResumen(); track periodLabel(item)) {
           <article class="bar-row">
             <div class="bar-meta">
@@ -331,6 +371,9 @@
           <div class="empty-state compact-empty">No hay ventas para la agrupacion elegida.</div>
         }
       </div>
+      @if (ventasResumen().length > 3) {
+        <p class="muted best-selling-footnote">Se muestran 3 periodos por vista. Desplaza para ver el detalle completo.</p>
+      }
     </article>
 
     <article class="surface panel">
@@ -340,7 +383,7 @@
           <p class="panel-subtitle">Total acumulado: {{ totalGainSummary() | currency: 'PEN':'symbol':'1.2-2' }}</p>
         </div>
       </div>
-      <div class="bar-list">
+      <div class="bar-list summary-scroll">
         @for (item of gananciasResumen(); track periodLabel(item)) {
           <article class="bar-row">
             <div class="bar-meta">
@@ -355,6 +398,9 @@
           <div class="empty-state compact-empty">No hay ganancias para la agrupacion elegida.</div>
         }
       </div>
+      @if (gananciasResumen().length > 3) {
+        <p class="muted best-selling-footnote">Se muestran 3 periodos por vista. Desplaza para ver el detalle completo.</p>
+      }
     </article>
   </section>
 

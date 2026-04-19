@@ -66,6 +66,56 @@
   margin-top: 0.35rem;
 }
 
+.pedidos-history-table-wrap {
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 1.4rem;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.pedidos-history-table {
+  min-width: 980px;
+}
+
+.table-product-preview {
+  display: grid;
+  gap: 0.38rem;
+  max-width: 22rem;
+  color: var(--table-cell-main-color, inherit);
+  font-weight: var(--table-cell-main-weight, inherit);
+}
+
+.table-product-line {
+  display: grid;
+  gap: 0.08rem;
+}
+
+.table-product-line strong {
+  color: inherit;
+  font-size: 0.96rem;
+  line-height: 1.25;
+  font-weight: var(--table-cell-main-weight, inherit);
+}
+
+.table-product-line span,
+.table-product-more,
+.table-product-empty {
+  color: rgba(71, 85, 105, 0.92);
+  font-size: 0.84rem;
+  line-height: 1.25;
+}
+
+.table-product-more {
+  font-weight: 700;
+}
+
+.pedidos-table-actions {
+  display: flex;
+  gap: 0.55rem;
+  justify-content: flex-end;
+  align-items: center;
+  flex-wrap: nowrap;
+}
+
 .pagination-bar {
   justify-content: space-between;
   margin-top: 0.8rem;
@@ -341,6 +391,10 @@
   .pagination-controls .btn {
     width: 100%;
     margin-top: 0;
+  }
+
+  .table-product-preview {
+    max-width: 14rem;
   }
 
   .pagination-size {

@@ -595,15 +595,44 @@ a {
   text-transform: uppercase;
 }
 
+.data-table tbody td:not(:last-child) {
+  --table-cell-main-color: rgba(71, 85, 105, 0.96);
+  --table-cell-main-weight: 500;
+  color: var(--table-cell-main-color);
+  font-weight: var(--table-cell-main-weight);
+}
+
+.data-table tbody td:nth-child(odd):not(:last-child) {
+  --table-cell-main-color: var(--text-main);
+  --table-cell-main-weight: 700;
+  color: var(--table-cell-main-color);
+  font-weight: var(--table-cell-main-weight);
+}
+
 .data-table th:last-child,
 .data-table td:last-child {
   width: 1%;
+  min-width: 7.75rem;
   white-space: nowrap;
   position: sticky;
   right: 0;
   background: linear-gradient(90deg, rgba(255, 250, 242, 0.92), rgba(255, 250, 242, 0.98));
   z-index: 1;
   border-left: 1px solid rgba(18, 52, 59, 0.08);
+}
+
+.data-table .table-actions {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.55rem;
+  min-width: max-content;
+}
+
+.data-table .table-actions .table-action-btn {
+  flex: 0 0 auto;
 }
 
 .data-table th:last-child {

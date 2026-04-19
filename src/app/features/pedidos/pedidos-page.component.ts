@@ -486,6 +486,48 @@ export class PedidosPageComponent implements OnDestroy {
     return buildOrderDetailProductLabel(this.productos(), detail);
   }
 
+  orderDateLabel(order: PedidoDTO): string {
+    const raw = String(order.fechaPedido ?? '').trim();
+    if (!raw) {
+      return 'Sin fecha';
+    }
+
+    const parsed = new Date(raw);
+    if (Number.isNaN(parsed.getTime())) {
+      return raw;
+    }
+
+    return new Intl.DateTimeFormat('es-PE', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    }).format(parsed);
+  }
+
+  orderItemsCount(order: PedidoDTO): number {
+    return (order.detalles ?? []).reduce((total, detail) => total + Number(detail.cantidad ?? 0), 0);
+  }
+
+  orderVisibleProducts(order: PedidoDTO): DetallePedidoDTO[] {
+    return (order.detalles ?? []).slice(0, 2);
+  }
+
+  orderRemainingProductsCount(order: PedidoDTO): number {
+    return Math.max(0, (order.detalles ?? []).length - 2);
+  }
+
+  orderProductsPreview(order: PedidoDTO): string {
+    const details = order.detalles ?? [];
+    if (!details.length) {
+      return 'Sin productos';
+    }
+
+    const labels = details.map((detail) => this.orderDetailProductLabel(detail));
+    const preview = labels.slice(0, 2).join(', ');
+    const remaining = labels.length - 2;
+    return remaining > 0 ? `${preview} +${remaining}` : preview;
+  }
+
   selectedClientLabel(): string {
     return this.clientLabel(this.pedidoForm.controls.idCliente.value);
   }

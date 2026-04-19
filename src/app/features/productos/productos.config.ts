@@ -42,13 +42,41 @@ export const productosPageConfig: ResourcePageConfig = {
     { key: 'precioVenta', label: 'Venta', type: 'currency' },
     { key: 'precioCompra', label: 'Compra', type: 'currency' },
     { key: 'idCategoria', label: 'Categoria', type: 'lookup', lookup: { resource: 'categorias', labelKey: 'nombre', valueKey: 'idCategoria' } },
-    { key: 'idProveedor', label: 'Proveedor', type: 'lookup', lookup: proveedorLookup },
+    {
+      key: 'idProveedor',
+      label: 'Proveedor',
+      type: 'lookup',
+      lookup: proveedorLookup,
+      renderLines: (item, context) => {
+        const proveedor = context.lookupOption(proveedorLookup, item['idProveedor']);
+        const nombre = String(proveedor?.['nombre'] ?? 'Proveedor sin nombre');
+        const ruc = String(proveedor?.['ruc'] ?? '').trim();
+        const telefono = String(proveedor?.['telefono'] ?? '').trim();
+        const email = String(proveedor?.['email'] ?? '').trim();
+
+        return [
+          nombre,
+          [ruc || null, telefono || null].filter(Boolean).join(' · '),
+          email || 'Sin correo',
+        ].filter(Boolean);
+      },
+    },
     { key: 'requiereReceta', label: 'Receta', type: 'boolean' },
     { key: 'fechaVencimiento', label: 'Vencimiento', type: 'date' },
   ],
   fields: [
     { key: 'nombre', label: 'Nombre', type: 'text', required: true, maxLength: 200 },
-    { key: 'codigoBarras', label: 'Codigo de barras', type: 'text', required: true, maxLength: 50 },
+    {
+      key: 'codigoBarras',
+      label: 'Codigo de barras',
+      type: 'text',
+      required: true,
+      inputFilter: 'digits',
+      minLength: 13,
+      maxLength: 13,
+      pattern: '^\\d{13}$',
+      helpText: 'Ingresa solo numeros. Debe tener exactamente 13 digitos.',
+    },
     {
       key: 'precioVenta',
       label: 'Precio de venta',

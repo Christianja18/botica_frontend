@@ -24,6 +24,21 @@ export interface ExpiringProduct {
   dias_para_vencer?: number;
 }
 
+export interface BestSellingProduct {
+  idProducto?: number;
+  id_producto?: number;
+  codigoBarras?: string;
+  codigo_barras?: string;
+  nombre: string;
+  idCategoria?: number;
+  id_categoria?: number;
+  categoria?: string;
+  cantidadVendida?: number;
+  cantidad_vendida?: number;
+  totalVendido?: number;
+  total_vendido?: number;
+}
+
 export type ReportPeriodGrouping =
   | 'dia'
   | 'mes'

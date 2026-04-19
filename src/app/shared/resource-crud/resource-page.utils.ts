@@ -76,10 +76,16 @@ export function fieldErrorMessage(field: ResourceFieldConfig, control: AbstractC
   }
 
   if (control.hasError('maxlength')) {
+    if (field.inputFilter === 'digits') {
+      return `Solo admite hasta ${field.maxLength} digitos.`;
+    }
     return `Solo admite ${field.maxLength} caracteres.`;
   }
 
   if (control.hasError('pattern')) {
+    if (field.inputFilter === 'digits') {
+      return `El campo ${field.label.toLowerCase()} solo admite numeros.`;
+    }
     if (field.type === 'email') {
       return 'Usa la estructura usuario@organizacion.dominio.';
     }

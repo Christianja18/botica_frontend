@@ -1,5 +1,14 @@
 import { ResourcePageConfig } from '../../shared/resource-crud/resource-page.types';
 
+function formatCurrency(value: unknown): string {
+  return new Intl.NumberFormat('es-PE', {
+    style: 'currency',
+    currency: 'PEN',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(Number(value ?? 0));
+}
+
 function pedidoLookupLabel(option: Record<string, unknown>): string {
   const idPedido = option['idPedido'] ?? '-';
   const fechaPedido = String(option['fechaPedido'] ?? 'Sin fecha');
@@ -66,8 +75,43 @@ export const detallesPedidoPageConfig: ResourcePageConfig = {
     formats: ['csv', 'excel'],
   },
   columns: [
-    { key: 'idPedido', label: 'Pedido', type: 'lookup', lookup: pedidoLookup },
-    { key: 'idProducto', label: 'Producto', type: 'lookup', lookup: productoLookup },
+    {
+      key: 'idPedido',
+      label: 'Pedido',
+      type: 'lookup',
+      lookup: pedidoLookup,
+      renderLines: (item) => {
+        const pedido = item['pedido'] as Record<string, unknown> | undefined;
+        const idPedido = item['idPedido'] ?? pedido?.['idPedido'] ?? '-';
+        const fechaPedido = String(pedido?.['fechaPedido'] ?? 'Sin fecha');
+        const estado = String(pedido?.['estado'] ?? 'Sin estado');
+        const total = pedido?.['total'] ?? 0;
+
+        return [
+          `Pedido #${idPedido} · ${fechaPedido}`,
+          estado,
+          formatCurrency(total),
+        ];
+      },
+    },
+    {
+      key: 'idProducto',
+      label: 'Producto',
+      type: 'lookup',
+      lookup: productoLookup,
+      renderLines: (item) => {
+        const producto = item['producto'] as Record<string, unknown> | undefined;
+        const nombre = String(producto?.['nombre'] ?? 'Producto sin nombre');
+        const codigoBarras = String(producto?.['codigoBarras'] ?? 'Sin codigo');
+        const precioVenta = producto?.['precioVenta'] ?? item['precioUnitario'] ?? 0;
+
+        return [
+          nombre,
+          codigoBarras,
+          formatCurrency(precioVenta),
+        ];
+      },
+    },
     { key: 'cantidad', label: 'Cantidad' },
     { key: 'precioUnitario', label: 'Precio', type: 'currency' },
     { key: 'subtotal', label: 'Subtotal', type: 'currency' },
