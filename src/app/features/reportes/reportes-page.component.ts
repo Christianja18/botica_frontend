@@ -201,6 +201,9 @@ export class ReportesPageComponent {
   }
 
   monthLabel(item: MonthlyMetric): string {
+    if (item.etiqueta?.trim()) {
+      return item.etiqueta;
+    }
     const month = item.mes ?? item.month ?? 1;
     return new Intl.DateTimeFormat('es-PE', { month: 'long' }).format(new Date(2026, month - 1, 1));
   }

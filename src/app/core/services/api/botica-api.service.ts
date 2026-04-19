@@ -12,7 +12,7 @@ import { PedidosService } from '../../../features/pedidos/services';
 import { ProductoDTO } from '../../../features/productos/models';
 import { ProductosService } from '../../../features/productos/services';
 import { ProveedoresService } from '../../../features/proveedores/services';
-import { ExpiringProduct, InventoryAlert, MonthlyMetric, ReporteDTO } from '../../../features/reportes/models';
+import { ExpiringProduct, InventoryAlert, MonthlyMetric, PeriodSummary, ReportPeriodGrouping, ReporteDTO } from '../../../features/reportes/models';
 import { ReportesService } from '../../../features/reportes/services';
 import { RolesService } from '../../../features/roles/services';
 import { UsuariosService } from '../../../features/usuarios/services';
@@ -85,6 +85,14 @@ export class BoticaApiService {
 
   generateInventoryReport(idUsuario: number): Observable<ReporteDTO> {
     return this.reportesService.generateInventoryReport(idUsuario);
+  }
+
+  getVentasResumen(agrupacion: ReportPeriodGrouping, year?: number): Observable<PeriodSummary[]> {
+    return this.reportesService.getVentasResumen(agrupacion, year);
+  }
+
+  getGananciasResumen(agrupacion: ReportPeriodGrouping, year?: number): Observable<PeriodSummary[]> {
+    return this.reportesService.getGananciasResumen(agrupacion, year);
   }
 
   getVentasPorMes(year: number): Observable<MonthlyMetric[]> {

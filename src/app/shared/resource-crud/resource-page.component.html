@@ -1,6 +1,6 @@
 <section class="page-shell" [attr.data-resource]="config().key">
   <header class="surface page-hero">
-    <p class="page-kicker">Modulo CRUD</p>
+    <p class="page-kicker">Gestion</p>
     <h1 class="page-title">{{ config().title }}</h1>
     <p class="page-description">{{ config().description }}</p>
     <div class="page-toolbar">
@@ -12,14 +12,39 @@
           [value]="searchTerm()"
           (input)="searchTerm.set($any($event.target).value)"
         />
-        <button class="btn btn-ghost" type="button" (click)="loadPage('Actualizando listado...')">Actualizar</button>
+        <button
+          class="btn btn-ghost btn-icon-only"
+          type="button"
+          (click)="loadPage('Actualizando listado...')"
+          aria-label="Actualizar listado"
+          title="Actualizar listado"
+        >
+          <span class="btn-icon-glyph btn-icon-refresh" aria-hidden="true"></span>
+          <span class="sr-only">Actualizar listado</span>
+        </button>
       }
       @if (viewMode() === 'list') {
-        <button class="btn btn-primary" type="button" (click)="openCreateView()">
-          Nuevo {{ config().createLabel }}
+        <button
+          class="btn btn-primary btn-icon-only"
+          type="button"
+          (click)="openCreateView()"
+          [attr.aria-label]="'Nuevo ' + config().createLabel"
+          [attr.title]="'Nuevo ' + config().createLabel"
+        >
+          <span class="btn-icon-glyph btn-icon-new" aria-hidden="true"></span>
+          <span class="sr-only">Nuevo {{ config().createLabel }}</span>
         </button>
       } @else {
-        <button class="btn btn-secondary" type="button" (click)="navigateToList()">Volver al listado</button>
+        <button
+          class="btn btn-secondary btn-icon-only"
+          type="button"
+          (click)="navigateToList()"
+          aria-label="Volver al listado"
+          title="Volver al listado"
+        >
+          <span class="btn-icon-glyph btn-icon-back" aria-hidden="true"></span>
+          <span class="sr-only">Volver al listado</span>
+        </button>
       }
     </div>
   </header>
@@ -34,7 +59,7 @@
 
   @if (viewMode() === 'list' && pickerTarget() && pickerFieldParam()) {
     <div class="banner">
-      Selecciona un registro para volver al formulario anterior con ese dato cargado.
+      Selecciona una opcion para completar el campo.
     </div>
   }
 
@@ -45,7 +70,7 @@
           <h2 class="panel-title">
             {{ editingId() ? 'Editar ' + config().createLabel : 'Nuevo ' + config().createLabel }}
           </h2>
-          <p class="panel-subtitle">Formulario alineado con los DTOs del backend.</p>
+          <p class="panel-subtitle">Completa la informacion del formulario.</p>
         </div>
       </div>
 
@@ -81,31 +106,49 @@
                 } @else if (field.type === 'select') {
                   <span class="field-label">{{ field.label }}</span>
                   @if (field.pickerOnly) {
-                    <input
-                      class="field-control field-control-readonly"
-                      type="text"
-                      [value]="pickerDisplayValue(field)"
-                      readonly
-                    />
-                    <div class="field-picker-row">
-                      <button class="btn btn-ghost" type="button" (click)="openFieldPicker(field)">
-                        {{ field.pickerButtonLabel || 'Buscar en otra vista' }}
-                      </button>
-                    </div>
-                  } @else {
-                    <select class="field-control" [formControlName]="field.key">
-                      <option value="">Selecciona una opcion</option>
-                      @for (option of lookupOptions()[field.lookup!.resource]; track $index) {
-                        <option [value]="option[field.lookup!.valueKey]">{{ lookupOptionLabel(field.lookup!, option) }}</option>
-                      }
-                    </select>
-                    @if (field.pickerRoute || field.pickerMode === 'modal') {
+                    <div class="field-inline-picker">
+                      <input
+                        class="field-control field-control-readonly"
+                        type="text"
+                        [value]="pickerDisplayValue(field)"
+                        readonly
+                      />
                       <div class="field-picker-row">
-                        <button class="btn btn-ghost" type="button" (click)="openFieldPicker(field)">
-                          {{ field.pickerButtonLabel || 'Buscar en otra vista' }}
+                        <button
+                          class="btn btn-ghost btn-icon-only"
+                          type="button"
+                          (click)="openFieldPicker(field)"
+                          [attr.aria-label]="field.pickerButtonLabel || 'Buscar en otra vista'"
+                          [attr.title]="field.pickerButtonLabel || 'Buscar en otra vista'"
+                        >
+                          <span class="btn-icon-glyph btn-icon-search" aria-hidden="true"></span>
+                          <span class="sr-only">{{ field.pickerButtonLabel || 'Buscar en otra vista' }}</span>
                         </button>
                       </div>
-                    }
+                    </div>
+                  } @else {
+                    <div class="field-inline-picker" [class.field-inline-picker-single]="!(field.pickerRoute || field.pickerMode === 'modal')">
+                      <select class="field-control" [formControlName]="field.key">
+                        <option value="">Selecciona una opcion</option>
+                        @for (option of lookupOptions()[field.lookup!.resource]; track $index) {
+                          <option [value]="option[field.lookup!.valueKey]">{{ lookupOptionLabel(field.lookup!, option) }}</option>
+                        }
+                      </select>
+                      @if (field.pickerRoute || field.pickerMode === 'modal') {
+                        <div class="field-picker-row">
+                          <button
+                            class="btn btn-ghost btn-icon-only"
+                            type="button"
+                            (click)="openFieldPicker(field)"
+                            [attr.aria-label]="field.pickerButtonLabel || 'Buscar en otra vista'"
+                            [attr.title]="field.pickerButtonLabel || 'Buscar en otra vista'"
+                          >
+                            <span class="btn-icon-glyph btn-icon-search" aria-hidden="true"></span>
+                            <span class="sr-only">{{ field.pickerButtonLabel || 'Buscar en otra vista' }}</span>
+                          </button>
+                        </div>
+                      }
+                    </div>
                   }
                 } @else {
                   <span class="field-label">{{ field.label }}</span>
@@ -134,13 +177,49 @@
           }
         </div>
         <div class="form-actions">
-          <button class="btn btn-primary" type="submit" [disabled]="saving()">
-            {{ saving() ? 'Guardando...' : editingId() ? 'Actualizar' : 'Crear' }}
+          @if (editingId()) {
+            <button
+              class="btn btn-primary btn-icon-only"
+              type="submit"
+              [disabled]="saving()"
+              aria-label="Actualizar registro"
+              title="Actualizar registro"
+            >
+              <span class="btn-icon-glyph btn-icon-edit" aria-hidden="true"></span>
+              <span class="sr-only">Actualizar registro</span>
+            </button>
+          } @else {
+            <button
+              class="btn btn-primary btn-icon-only"
+              type="submit"
+              [disabled]="saving()"
+              aria-label="Guardar registro"
+              title="Guardar registro"
+            >
+              <span class="btn-icon-glyph btn-icon-save" aria-hidden="true"></span>
+              <span class="sr-only">Guardar registro</span>
+            </button>
+          }
+          <button
+            class="btn btn-secondary btn-icon-only"
+            type="button"
+            (click)="resetForm()"
+            aria-label="Limpiar formulario"
+            title="Limpiar formulario"
+          >
+            <span class="btn-icon-glyph btn-icon-clear" aria-hidden="true"></span>
+            <span class="sr-only">Limpiar formulario</span>
           </button>
-          <button class="btn btn-secondary" type="button" (click)="resetForm()">
-            {{ editingId() ? 'Restablecer datos' : 'Limpiar' }}
+          <button
+            class="btn btn-ghost btn-icon-only"
+            type="button"
+            (click)="navigateToList()"
+            aria-label="Cancelar"
+            title="Cancelar"
+          >
+            <span class="btn-icon-glyph btn-icon-cancel" aria-hidden="true"></span>
+            <span class="sr-only">Cancelar</span>
           </button>
-          <button class="btn btn-ghost" type="button" (click)="navigateToList()">Cancelar</button>
         </div>
       </form>
     </article>
@@ -182,8 +261,26 @@
                           Seleccionar
                         </button>
                       }
-                      <button class="btn btn-ghost table-action-btn" type="button" (click)="editItem(item)">Actualizar</button>
-                      <button class="btn btn-danger table-action-btn" type="button" (click)="deleteItem(item)">Eliminar</button>
+                      <button
+                        class="btn btn-ghost table-action-btn btn-icon-only"
+                        type="button"
+                        (click)="editItem(item)"
+                        aria-label="Actualizar registro"
+                        title="Actualizar registro"
+                      >
+                        <span class="btn-icon-glyph btn-icon-edit" aria-hidden="true"></span>
+                        <span class="sr-only">Actualizar registro</span>
+                      </button>
+                      <button
+                        class="btn btn-danger table-action-btn btn-icon-only"
+                        type="button"
+                        (click)="deleteItem(item)"
+                        aria-label="Eliminar registro"
+                        title="Eliminar registro"
+                      >
+                        <span class="btn-icon-glyph btn-icon-delete" aria-hidden="true"></span>
+                        <span class="sr-only">Eliminar registro</span>
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -214,16 +311,27 @@
                 </select>
               </label>
 
-              <button class="btn btn-secondary" type="button" [disabled]="currentPage() === 0" (click)="previousPage()">
-                Anterior
+              <button
+                class="btn btn-secondary btn-icon-only"
+                type="button"
+                [disabled]="currentPage() === 0"
+                (click)="previousPage()"
+                aria-label="Pagina anterior"
+                title="Pagina anterior"
+              >
+                <span class="btn-icon-glyph btn-icon-prev" aria-hidden="true"></span>
+                <span class="sr-only">Pagina anterior</span>
               </button>
               <button
-                class="btn btn-secondary"
+                class="btn btn-secondary btn-icon-only"
                 type="button"
                 [disabled]="currentPage() + 1 >= totalPages()"
                 (click)="nextPage()"
+                aria-label="Pagina siguiente"
+                title="Pagina siguiente"
               >
-                Siguiente
+                <span class="btn-icon-glyph btn-icon-next" aria-hidden="true"></span>
+                <span class="sr-only">Pagina siguiente</span>
               </button>
             </div>
           </div>
@@ -237,9 +345,9 @@
       <article class="surface picker-modal" (click)="$event.stopPropagation()">
         <div class="panel-header picker-header">
           <div class="picker-header-body">
-            <p class="page-kicker">Seleccion asistida</p>
+            <p class="page-kicker">Seleccion</p>
             <h2 class="panel-title">Seleccionar {{ pickerField.label.toLowerCase() }}</h2>
-            <p class="panel-subtitle">Elige un registro y se aplicara inmediatamente al formulario.</p>
+            <p class="panel-subtitle">Elige una opcion para completar este campo.</p>
           </div>
           <button class="btn btn-secondary picker-close-btn" type="button" (click)="closePickerModal()">Cerrar</button>
         </div>

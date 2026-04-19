@@ -20,16 +20,16 @@ export function resolveApiError(error: unknown): string {
     }
 
     if (error.status === 0) {
-      return 'No se pudo conectar con el backend en http://localhost:8082.';
+      return 'No se pudo conectar con el sistema. Intentalo nuevamente.';
     }
-    return `La operacion fallo con estado ${error.status}.`;
+    return 'No se pudo completar la operacion.';
   }
 
   if (error instanceof Error) {
     return error.message;
   }
 
-  return 'Ocurrio un error inesperado al comunicarse con el backend.';
+  return 'Ocurrio un error inesperado. Intentalo nuevamente.';
 }
 
 function mapFriendlyApiError(message: string): string {

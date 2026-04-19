@@ -2,10 +2,19 @@
   <header class="surface page-hero">
     <p class="page-kicker">Analítica y control</p>
     <h1 class="page-title">Reportes</h1>
-    <p class="page-description">Genera reportes de ventas e inventario usando los endpoints especiales del backend y consulta el histórico generado.</p>
+    <p class="page-description">Genera reportes de ventas e inventario y revisa el historial.</p>
     <div class="page-toolbar">
       <span class="pill">{{ reportesTotalElements() }} reportes almacenados</span>
-      <button class="btn btn-ghost" type="button" (click)="loadPage('Actualizando reportes...')">Actualizar</button>
+      <button
+        class="btn btn-ghost btn-icon-only"
+        type="button"
+        (click)="loadPage('Actualizando reportes...')"
+        aria-label="Actualizar reportes"
+        title="Actualizar reportes"
+      >
+        <span class="btn-icon-glyph btn-icon-refresh" aria-hidden="true"></span>
+        <span class="sr-only">Actualizar reportes</span>
+      </button>
     </div>
   </header>
 
@@ -18,7 +27,7 @@
       <div class="panel-header">
         <div>
           <h2 class="panel-title">Generar reporte de ventas</h2>
-          <p class="panel-subtitle">El backend espera fechas en formato `dd/MM/yyyy`.</p>
+          <p class="panel-subtitle">Selecciona las fechas y el responsable del reporte.</p>
         </div>
       </div>
       <form class="report-form" [formGroup]="salesForm" (ngSubmit)="createSalesReport()">
@@ -84,7 +93,7 @@
       <div class="panel-header">
         <div>
           <h2 class="panel-title">Historial de reportes</h2>
-          <p class="panel-subtitle">Registros persistidos en `/api/reportes`.</p>
+          <p class="panel-subtitle">Consulta los reportes generados.</p>
         </div>
         <div class="history-toolbar">
           <span class="pill">Pagina {{ reportesPage() + 1 }} de {{ reportesTotalPages() }}</span>
@@ -117,7 +126,16 @@
                   <h3 class="panel-title">Reporte #{{ report.idReporte }}</h3>
                   <p class="panel-subtitle">{{ report.fechaGeneracion || 'Sin fecha' }} · {{ reportOwner(report.generadoPor) }}</p>
                 </div>
-                <button class="btn btn-danger" type="button" (click)="deleteReport(report)">Eliminar</button>
+                <button
+                  class="btn btn-danger btn-icon-only"
+                  type="button"
+                  (click)="deleteReport(report)"
+                  aria-label="Eliminar reporte"
+                  title="Eliminar reporte"
+                >
+                  <span class="btn-icon-glyph btn-icon-delete" aria-hidden="true"></span>
+                  <span class="sr-only">Eliminar reporte</span>
+                </button>
               </div>
               <p class="muted">{{ reportDataPreview(report) }}</p>
               @if (report.archivoPath) {
@@ -132,16 +150,27 @@
             <span>{{ pageRangeLabel() }}</span>
           </div>
           <div class="pagination-controls">
-            <button class="btn btn-secondary" type="button" [disabled]="reportesPage() === 0" (click)="previousReportPage()">
-              Anterior
+            <button
+              class="btn btn-secondary btn-icon-only"
+              type="button"
+              [disabled]="reportesPage() === 0"
+              (click)="previousReportPage()"
+              aria-label="Pagina anterior"
+              title="Pagina anterior"
+            >
+              <span class="btn-icon-glyph btn-icon-prev" aria-hidden="true"></span>
+              <span class="sr-only">Pagina anterior</span>
             </button>
             <button
-              class="btn btn-secondary"
+              class="btn btn-secondary btn-icon-only"
               type="button"
               [disabled]="reportesPage() + 1 >= reportesTotalPages()"
               (click)="nextReportPage()"
+              aria-label="Pagina siguiente"
+              title="Pagina siguiente"
             >
-              Siguiente
+              <span class="btn-icon-glyph btn-icon-next" aria-hidden="true"></span>
+              <span class="sr-only">Pagina siguiente</span>
             </button>
           </div>
         </div>
@@ -191,7 +220,7 @@
         <div class="saving-spinner" aria-hidden="true"></div>
         <strong>{{ generating() ? 'Generando reporte...' : actionMessage() }}</strong>
         <span>
-          {{ generating() ? 'Espera un momento mientras actualizamos el historial de reportes.' : 'Espera un momento por favor.' }}
+          {{ generating() ? 'Espera un momento mientras preparamos el reporte.' : 'Espera un momento por favor.' }}
         </span>
       </div>
     </div>

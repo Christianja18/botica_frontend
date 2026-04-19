@@ -5,7 +5,6 @@ import { Router } from '@angular/router';
 import { finalize } from 'rxjs';
 
 import { appSettings } from '../../core/config/app.settings';
-import { DevelopmentCredential } from '../../core/models';
 import { AuthService, resolveApiError } from '../../core/services';
 import { notBlankTrimmedValidator, trimTextValue } from '../../core/validators';
 
@@ -23,7 +22,6 @@ export class LoginPageComponent {
   readonly appTagline = appSettings.appTagline;
   readonly loading = signal(false);
   readonly errorMessage = signal<string | null>(null);
-  readonly credentials = this.auth.developmentCredentials;
 
   readonly form = new FormGroup({
     email: new FormControl('', {
@@ -54,12 +52,5 @@ export class LoginPageComponent {
         next: () => void this.router.navigate(['/dashboard']),
         error: (error: unknown) => this.errorMessage.set(resolveApiError(error)),
       });
-  }
-
-  useCredential(credential: DevelopmentCredential): void {
-    this.form.patchValue({
-      email: credential.email,
-      password: credential.password,
-    });
   }
 }

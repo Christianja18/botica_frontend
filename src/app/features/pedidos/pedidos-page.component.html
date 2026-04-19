@@ -3,15 +3,42 @@
     <p class="page-kicker">Ventas y pedidos</p>
     <h1 class="page-title">Gestion de pedidos</h1>
     <p class="page-description">
-      Flujo principal de venta para guardar cabecera y detalle del pedido en una sola operacion.
+      Crea, revisa y actualiza pedidos con sus productos.
     </p>
     <div class="page-toolbar">
       <span class="pill">{{ historyTotalElements() }} pedidos totales</span>
       @if (viewMode() === 'list') {
-        <button class="btn btn-ghost" type="button" (click)="loadPage('Actualizando pedidos...')">Actualizar</button>
-        <button class="btn btn-primary" type="button" (click)="openCreateView()">Nuevo pedido</button>
+        <button
+          class="btn btn-ghost btn-icon-only"
+          type="button"
+          (click)="loadPage('Actualizando pedidos...')"
+          aria-label="Actualizar pedidos"
+          title="Actualizar pedidos"
+        >
+          <span class="btn-icon-glyph btn-icon-refresh" aria-hidden="true"></span>
+          <span class="sr-only">Actualizar pedidos</span>
+        </button>
+        <button
+          class="btn btn-primary btn-icon-only"
+          type="button"
+          (click)="openCreateView()"
+          aria-label="Nuevo pedido"
+          title="Nuevo pedido"
+        >
+          <span class="btn-icon-glyph btn-icon-new" aria-hidden="true"></span>
+          <span class="sr-only">Nuevo pedido</span>
+        </button>
       } @else {
-        <button class="btn btn-secondary" type="button" (click)="navigateToList()">Volver al historial</button>
+        <button
+          class="btn btn-secondary btn-icon-only"
+          type="button"
+          (click)="navigateToList()"
+          aria-label="Volver al historial"
+          title="Volver al historial"
+        >
+          <span class="btn-icon-glyph btn-icon-back" aria-hidden="true"></span>
+          <span class="sr-only">Volver al historial</span>
+        </button>
       }
     </div>
   </header>
@@ -26,7 +53,7 @@
 
   @if (selectorMode() === 'boleta' && viewMode() === 'list') {
     <div class="banner">
-      Selecciona un pedido del historial para volver automaticamente a boletas con ese pedido cargado.
+      Selecciona un pedido para usarlo en la boleta.
     </div>
   }
 
@@ -35,7 +62,7 @@
       <div class="panel-header">
         <div>
           <h2 class="panel-title">{{ editingId() ? 'Editar pedido' : 'Nuevo pedido' }}</h2>
-          <p class="panel-subtitle">El backend procesa esta venta como una operacion transaccional unica con sus items.</p>
+          <p class="panel-subtitle">Completa los datos del pedido y sus productos.</p>
         </div>
       </div>
 
@@ -65,16 +92,38 @@
         <div class="form-grid order-summary-grid">
           <label class="field field-with-action order-summary-field">
             <span class="field-label">Cliente</span>
-            <input class="field-control field-control-readonly" type="text" [value]="selectedClientLabel()" readonly />
-            <div class="field-picker-row">
-              <button class="btn btn-ghost" type="button" (click)="openClientPicker()">Buscar cliente</button>
+            <div class="field-inline-picker">
+              <input class="field-control field-control-readonly" type="text" [value]="selectedClientLabel()" readonly />
+              <div class="field-picker-row">
+                <button
+                  class="btn btn-ghost btn-icon-only"
+                  type="button"
+                  (click)="openClientPicker()"
+                  aria-label="Buscar cliente"
+                  title="Buscar cliente"
+                >
+                  <span class="btn-icon-glyph btn-icon-search" aria-hidden="true"></span>
+                  <span class="sr-only">Buscar cliente</span>
+                </button>
+              </div>
             </div>
           </label>
           <label class="field field-with-action order-summary-field">
             <span class="field-label">Usuario</span>
-            <input class="field-control field-control-readonly" type="text" [value]="selectedUserLabel()" readonly />
-            <div class="field-picker-row">
-              <button class="btn btn-ghost" type="button" (click)="openUserPicker()">Buscar usuario</button>
+            <div class="field-inline-picker">
+              <input class="field-control field-control-readonly" type="text" [value]="selectedUserLabel()" readonly />
+              <div class="field-picker-row">
+                <button
+                  class="btn btn-ghost btn-icon-only"
+                  type="button"
+                  (click)="openUserPicker()"
+                  aria-label="Buscar usuario"
+                  title="Buscar usuario"
+                >
+                  <span class="btn-icon-glyph btn-icon-search" aria-hidden="true"></span>
+                  <span class="sr-only">Buscar usuario</span>
+                </button>
+              </div>
             </div>
           </label>
           <label class="field order-summary-field">
@@ -102,9 +151,20 @@
               <div class="detail-row">
                 <label class="field field-with-action detail-field detail-field-product">
                   <span class="field-label">Producto</span>
-                  <input class="field-control field-control-readonly" type="text" [value]="selectedProductLabel($index)" readonly />
-                  <div class="field-picker-row">
-                    <button class="btn btn-ghost" type="button" (click)="openProductPicker($index)">Buscar producto</button>
+                  <div class="field-inline-picker">
+                    <input class="field-control field-control-readonly" type="text" [value]="selectedProductLabel($index)" readonly />
+                    <div class="field-picker-row">
+                      <button
+                        class="btn btn-ghost btn-icon-only"
+                        type="button"
+                        (click)="openProductPicker($index)"
+                        aria-label="Buscar producto"
+                        title="Buscar producto"
+                      >
+                        <span class="btn-icon-glyph btn-icon-search" aria-hidden="true"></span>
+                        <span class="sr-only">Buscar producto</span>
+                      </button>
+                    </div>
                   </div>
                 </label>
                 <label class="field detail-field">
@@ -160,17 +220,49 @@
         </div>
 
         <div class="form-actions">
+          @if (editingId()) {
+            <button
+              class="btn btn-primary btn-icon-only"
+              type="submit"
+              [disabled]="saving() || (pedidoForm.controls.estado.value === 'completado' && orderBusinessWarnings().length > 0)"
+              aria-label="Actualizar venta"
+              title="Actualizar venta"
+            >
+              <span class="btn-icon-glyph btn-icon-edit" aria-hidden="true"></span>
+              <span class="sr-only">Actualizar venta</span>
+            </button>
+          } @else {
+            <button
+              class="btn btn-primary btn-icon-only"
+              type="submit"
+              [disabled]="saving() || (pedidoForm.controls.estado.value === 'completado' && orderBusinessWarnings().length > 0)"
+              aria-label="Guardar venta"
+              title="Guardar venta"
+            >
+              <span class="btn-icon-glyph btn-icon-save" aria-hidden="true"></span>
+              <span class="sr-only">Guardar venta</span>
+            </button>
+          }
           <button
-            class="btn btn-primary"
-            type="submit"
-            [disabled]="saving() || (pedidoForm.controls.estado.value === 'completado' && orderBusinessWarnings().length > 0)"
+            class="btn btn-secondary btn-icon-only"
+            type="button"
+            (click)="resetForm()"
+            aria-label="Limpiar formulario"
+            title="Limpiar formulario"
           >
-            {{ saving() ? 'Guardando...' : editingId() ? 'Actualizar venta' : 'Guardar venta' }}
+            <span class="btn-icon-glyph btn-icon-clear" aria-hidden="true"></span>
+            <span class="sr-only">Limpiar formulario</span>
           </button>
-          <button class="btn btn-secondary" type="button" (click)="resetForm()">
-            {{ editingId() ? 'Restablecer datos' : 'Limpiar' }}
+          <button
+            class="btn btn-ghost btn-icon-only"
+            type="button"
+            (click)="navigateToList()"
+            aria-label="Cancelar"
+            title="Cancelar"
+          >
+            <span class="btn-icon-glyph btn-icon-cancel" aria-hidden="true"></span>
+            <span class="sr-only">Cancelar</span>
           </button>
-          <button class="btn btn-ghost" type="button" (click)="navigateToList()">Cancelar</button>
         </div>
       </form>
     </article>
@@ -179,7 +271,7 @@
       <div class="panel-header orders-history-header">
         <div>
           <h2 class="panel-title">Historial de pedidos</h2>
-          <p class="panel-subtitle">Consulta ventas guardadas desde el flujo transaccional principal de pedidos.</p>
+          <p class="panel-subtitle">Consulta los pedidos registrados.</p>
         </div>
         <div class="orders-history-tools">
           <select class="field-control orders-filter" [ngModel]="estadoFiltro()" [ngModelOptions]="{ standalone: true }" (ngModelChange)="setEstadoFiltro($event)">
@@ -240,8 +332,26 @@
                     Usar en boleta
                   </button>
                 }
-                <button class="btn btn-ghost order-action-btn" type="button" (click)="editOrder(pedido)">Actualizar</button>
-                <button class="btn btn-danger order-action-btn" type="button" (click)="deleteOrder(pedido)">Eliminar</button>
+                <button
+                  class="btn btn-ghost order-action-btn btn-icon-only"
+                  type="button"
+                  (click)="editOrder(pedido)"
+                  aria-label="Actualizar pedido"
+                  title="Actualizar pedido"
+                >
+                  <span class="btn-icon-glyph btn-icon-edit" aria-hidden="true"></span>
+                  <span class="sr-only">Actualizar pedido</span>
+                </button>
+                <button
+                  class="btn btn-danger order-action-btn btn-icon-only"
+                  type="button"
+                  (click)="deleteOrder(pedido)"
+                  aria-label="Eliminar pedido"
+                  title="Eliminar pedido"
+                >
+                  <span class="btn-icon-glyph btn-icon-delete" aria-hidden="true"></span>
+                  <span class="sr-only">Eliminar pedido</span>
+                </button>
               </div>
             </article>
           }
@@ -252,16 +362,27 @@
             <span>{{ historyRangeLabel() }}</span>
           </div>
           <div class="pagination-controls">
-            <button class="btn btn-secondary" type="button" [disabled]="historyPage() === 0" (click)="previousHistoryPage()">
-              Anterior
+            <button
+              class="btn btn-secondary btn-icon-only"
+              type="button"
+              [disabled]="historyPage() === 0"
+              (click)="previousHistoryPage()"
+              aria-label="Pagina anterior"
+              title="Pagina anterior"
+            >
+              <span class="btn-icon-glyph btn-icon-prev" aria-hidden="true"></span>
+              <span class="sr-only">Pagina anterior</span>
             </button>
             <button
-              class="btn btn-secondary"
+              class="btn btn-secondary btn-icon-only"
               type="button"
               [disabled]="historyPage() + 1 >= historyTotalPages()"
               (click)="nextHistoryPage()"
+              aria-label="Pagina siguiente"
+              title="Pagina siguiente"
             >
-              Siguiente
+              <span class="btn-icon-glyph btn-icon-next" aria-hidden="true"></span>
+              <span class="sr-only">Pagina siguiente</span>
             </button>
           </div>
         </div>
@@ -274,7 +395,7 @@
       <article class="surface picker-modal" (click)="$event.stopPropagation()">
         <div class="panel-header picker-header">
           <div class="picker-header-body">
-            <p class="page-kicker">Seleccion asistida</p>
+            <p class="page-kicker">Seleccion</p>
             <h2 class="panel-title">
               @switch (activePicker()) {
                 @case ('cliente') { Seleccionar cliente }
@@ -282,7 +403,7 @@
                 @default { Seleccionar producto }
               }
             </h2>
-            <p class="panel-subtitle">Elige un registro y se aplicara inmediatamente al pedido.</p>
+            <p class="panel-subtitle">Elige una opcion para continuar con el pedido.</p>
           </div>
           <button class="btn btn-secondary picker-close-btn" type="button" (click)="closePicker()">Cerrar</button>
         </div>

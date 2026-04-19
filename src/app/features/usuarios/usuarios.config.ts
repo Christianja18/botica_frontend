@@ -4,7 +4,7 @@ export const usuariosPageConfig: ResourcePageConfig = {
   key: 'usuarios',
   idKey: 'idUsuario',
   title: 'Usuarios del sistema',
-  description: 'Administra al personal que usa la plataforma y asignales un rol del backend.',
+  description: 'Administra al personal y sus permisos de acceso.',
   createLabel: 'usuario',
   emptyState: 'Todavia no hay usuarios registrados.',
   searchableFields: ['nombre', 'apellido', 'email'],
@@ -38,7 +38,7 @@ export const usuariosPageConfig: ResourcePageConfig = {
       requiredOnCreate: true,
       minLength: 8,
       maxLength: 8,
-      helpText: 'La contrasena debe tener exactamente 8 caracteres. Si editas y lo dejas vacio, se conserva la contrasena actual.',
+      helpText: 'Si lo dejas vacio al editar, se mantiene la clave actual.',
     },
     {
       key: 'idRol',

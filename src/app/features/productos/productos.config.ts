@@ -70,7 +70,7 @@ export const productosPageConfig: ResourcePageConfig = {
       label: 'Fecha de vencimiento',
       type: 'date',
       minDate: 'today',
-      helpText: 'Selecciona una fecha de vencimiento igual o posterior a hoy.',
+      helpText: 'Elige una fecha de vencimiento valida.',
     },
     {
       key: 'idProveedor',
@@ -81,7 +81,7 @@ export const productosPageConfig: ResourcePageConfig = {
       pickerOnly: true,
       pickerMode: 'modal',
       pickerButtonLabel: 'Buscar proveedor',
-      helpText: 'Selecciona el proveedor desde una ventana asistida sin salir del formulario.',
+      helpText: 'Selecciona el proveedor.',
     },
     { key: 'requiereReceta', label: 'Requiere receta', type: 'checkbox' },
     { key: 'descripcion', label: 'Descripcion', type: 'textarea', maxLength: 500 },

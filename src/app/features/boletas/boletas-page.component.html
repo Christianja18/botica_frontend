@@ -31,7 +31,16 @@
                 }
               </select>
             </label>
-            <button class="btn btn-ghost" type="button" (click)="loadBoletas()">Actualizar impresion</button>
+            <button
+              class="btn btn-ghost btn-icon-only"
+              type="button"
+              (click)="loadBoletas()"
+              aria-label="Actualizar impresion"
+              title="Actualizar impresion"
+            >
+              <span class="btn-icon-glyph btn-icon-refresh" aria-hidden="true"></span>
+              <span class="sr-only">Actualizar impresion</span>
+            </button>
           </div>
         </div>
 
@@ -99,16 +108,27 @@
               <span>{{ printRangeLabel() }}</span>
             </div>
             <div class="pagination-controls">
-              <button class="btn btn-secondary" type="button" [disabled]="printPage() === 0" (click)="previousPrintPage()">
-                Anterior
+              <button
+                class="btn btn-secondary btn-icon-only"
+                type="button"
+                [disabled]="printPage() === 0"
+                (click)="previousPrintPage()"
+                aria-label="Pagina anterior"
+                title="Pagina anterior"
+              >
+                <span class="btn-icon-glyph btn-icon-prev" aria-hidden="true"></span>
+                <span class="sr-only">Pagina anterior</span>
               </button>
               <button
-                class="btn btn-secondary"
+                class="btn btn-secondary btn-icon-only"
                 type="button"
                 [disabled]="printPage() + 1 >= printTotalPages()"
                 (click)="nextPrintPage()"
+                aria-label="Pagina siguiente"
+                title="Pagina siguiente"
               >
-                Siguiente
+                <span class="btn-icon-glyph btn-icon-next" aria-hidden="true"></span>
+                <span class="sr-only">Pagina siguiente</span>
               </button>
             </div>
           </div>

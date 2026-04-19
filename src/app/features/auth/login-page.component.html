@@ -1,33 +1,91 @@
 <section class="login-layout">
-  <div class="login-hero">
-    <div>
-      <p class="page-kicker">Frontend Angular para Botiquin & bazar</p>
-      <h1>{{ appName }}</h1>
-      <p class="login-copy">
-        Sistema integrado de farmacia con módulos de ventas, inventario, catálogos y reportes,
-        alineado con los controladores disponibles en `botica_backend`.
-      </p>
+  <div class="surface login-hero">
+    <div class="login-brand">
+      <div class="login-brand-mark" aria-hidden="true">
+        <svg class="login-brand-logo" viewBox="0 0 96 96" role="presentation" focusable="false">
+          <defs>
+            <linearGradient id="loginLogoBg" x1="14" y1="10" x2="84" y2="88" gradientUnits="userSpaceOnUse">
+              <stop offset="0" stop-color="#79ded0" />
+              <stop offset="1" stop-color="#dff8f4" />
+            </linearGradient>
+            <filter id="loginLogoGlow" x="-20%" y="-20%" width="140%" height="140%">
+              <feDropShadow dx="0" dy="5" stdDeviation="4" flood-color="#1d4a95" flood-opacity="0.18" />
+            </filter>
+          </defs>
+          <rect x="4" y="4" width="88" height="88" rx="28" fill="url(#loginLogoBg)" />
+          <path
+            d="M46 75C28 59 17 47 17 32.5C17 21.2 25.6 13 35.6 13C41.9 13 46.3 16.2 48.8 22.1C51.3 16.2 55.7 13 62 13C72 13 80.6 21.2 80.6 32.5C80.6 47 69.4 59 51.3 75L48.8 77.2L46 75Z"
+            fill="#ffffff"
+            stroke="#214ea5"
+            stroke-width="5"
+            stroke-linejoin="round"
+            filter="url(#loginLogoGlow)"
+          />
+          <path
+            d="M42 74C25 59 15.5 48.3 15.5 33.6C15.5 27.9 17.7 22.5 21.6 18.5"
+            fill="none"
+            stroke="#67d3c4"
+            stroke-width="4.5"
+            stroke-linecap="round"
+            opacity="0.9"
+          />
+          <rect x="43" y="28" width="10" height="24" rx="4" fill="#d44532" />
+          <rect x="36" y="35" width="24" height="10" rx="4" fill="#d44532" />
+          <path
+            d="M49 74C49.6 81 52.4 88 60.8 88C69.4 88 72.1 82.5 74.6 70.4"
+            fill="none"
+            stroke="#214ea5"
+            stroke-width="4.5"
+            stroke-linecap="round"
+          />
+          <circle cx="75" cy="68" r="4.8" fill="#214ea5" />
+          <path
+            d="M76.6 67.2C82 63.2 84.6 58.9 84.6 53.3"
+            fill="none"
+            stroke="#214ea5"
+            stroke-width="4"
+            stroke-linecap="round"
+          />
+          <circle cx="84.6" cy="52.2" r="3.7" fill="none" stroke="#214ea5" stroke-width="3.5" />
+        </svg>
+      </div>
+
+      <div class="login-brand-copy">
+        <p class="page-kicker">Botiquin & bazar</p>
+        <h1>{{ appName }}</h1>
+        <p class="login-copy">{{ appTagline }} desde un solo espacio de trabajo.</p>
+      </div>
     </div>
 
-    <div class="hero-cards">
-      <article class="surface hero-card">
-        <span class="pill">CRUDs conectados</span>
-        <h2>Interfaces basadas en controladores Spring</h2>
-        <p>Usuarios, roles, clientes, productos, inventario, pedidos, boletas y reportes.</p>
-      </article>
-      <article class="surface hero-card">
-        <span class="pill">Acceso seguro</span>
-        <h2>Ingreso protegido</h2>
-        <p>Accede con tu cuenta para usar ventas, inventario, catálogos y reportes.</p>
-      </article>
+    <div class="login-hero-body">
+      <span class="pill login-pill">Acceso centralizado</span>
+      <h2>Todo lo importante, sin distracciones.</h2>
+      <p class="login-support">
+        Ingresa con tu cuenta para continuar con ventas, inventario, boletas y reportes en un entorno simple y claro.
+      </p>
+
+      <div class="login-benefits">
+        <article class="login-benefit">
+          <strong>Ventas</strong>
+          <span>Atiende pedidos y clientes con rapidez.</span>
+        </article>
+        <article class="login-benefit">
+          <strong>Inventario</strong>
+          <span>Controla stock, productos y movimientos.</span>
+        </article>
+        <article class="login-benefit">
+          <strong>Reportes</strong>
+          <span>Consulta la informacion clave del negocio.</span>
+        </article>
+      </div>
     </div>
   </div>
 
   <div class="surface surface-strong login-panel">
-    <div>
+    <div class="login-panel-head">
       <p class="page-kicker">Acceso</p>
       <h2 class="login-title">Ingresar al sistema</h2>
-      <p class="panel-subtitle">Los usuarios semilla del SQL comparten la clave de desarrollo `Botica2026!`.</p>
+      <p class="panel-subtitle">Escribe tu correo y tu clave para continuar.</p>
     </div>
 
     @if (errorMessage()) {
@@ -38,26 +96,24 @@
       <label class="field">
         <span class="field-label">Correo</span>
         <input class="field-control" type="email" formControlName="email" placeholder="maria.perez@botica.com" />
+        @if (form.controls.email.touched && form.controls.email.invalid) {
+          <span class="field-error">Ingresa un correo valido.</span>
+        }
       </label>
+
       <label class="field">
-        <span class="field-label">Contraseña</span>
-        <input class="field-control" type="password" formControlName="password" placeholder="Botica2026!" />
+        <span class="field-label">Clave</span>
+        <input class="field-control" type="password" formControlName="password" placeholder="Ingresa tu clave" />
+        @if (form.controls.password.touched && form.controls.password.invalid) {
+          <span class="field-error">Ingresa tu clave.</span>
+        }
       </label>
-      <div class="form-actions">
-        <button class="btn btn-primary" type="submit" [disabled]="loading()">
-          {{ loading() ? 'Ingresando...' : 'Entrar al sistema' }}
+
+      <div class="form-actions login-actions">
+        <button class="btn btn-primary login-submit" type="submit" [disabled]="loading()">
+          {{ loading() ? 'Ingresando...' : 'Ingresar' }}
         </button>
       </div>
     </form>
-
-    <div class="demo-grid">
-      @for (credential of credentials; track credential.email) {
-        <button class="demo-card" type="button" (click)="useCredential(credential)" [disabled]="loading()">
-          <span class="pill">{{ credential.rolNombre }}</span>
-          <strong>{{ credential.email }}</strong>
-          <small>Completa el formulario con esta cuenta</small>
-        </button>
-      }
-    </div>
   </div>
 </section>

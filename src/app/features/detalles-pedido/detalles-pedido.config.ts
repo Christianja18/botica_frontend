@@ -49,7 +49,7 @@ export const detallesPedidoPageConfig: ResourcePageConfig = {
   key: 'detalles-pedido',
   idKey: 'idDetalle',
   title: 'Mantenimiento de detalles',
-  description: 'Modulo tecnico para ajustes puntuales. El flujo principal de venta vive en Pedidos.',
+  description: 'Realiza ajustes puntuales en el detalle de los pedidos.',
   createLabel: 'ajuste puntual',
   emptyState: 'Todavia no hay ajustes de detalles registrados.',
   searchableFields: ['idPedido', 'idProducto'],
@@ -77,7 +77,7 @@ export const detallesPedidoPageConfig: ResourcePageConfig = {
       pickerOnly: true,
       pickerMode: 'modal',
       pickerButtonLabel: 'Buscar pedido',
-      helpText: 'Selecciona el pedido desde una ventana asistida sin salir del formulario.',
+      helpText: 'Selecciona el pedido.',
     },
     {
       key: 'idProducto',
@@ -88,7 +88,7 @@ export const detallesPedidoPageConfig: ResourcePageConfig = {
       pickerOnly: true,
       pickerMode: 'modal',
       pickerButtonLabel: 'Buscar producto',
-      helpText: 'Selecciona el producto desde una ventana asistida sin salir del formulario.',
+      helpText: 'Selecciona el producto.',
     },
     { key: 'cantidad', label: 'Cantidad', type: 'number', required: true, min: 1 },
     {

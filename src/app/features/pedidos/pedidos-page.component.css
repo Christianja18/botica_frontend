@@ -121,18 +121,21 @@
 .field-picker-row {
   display: flex;
   justify-content: flex-start;
-  margin-top: 0.65rem;
-  min-height: var(--action-btn-height);
-  align-items: flex-start;
+  margin-top: 0;
+  min-height: auto;
+  align-items: center;
+}
+
+.field-inline-picker {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.65rem;
+  align-items: center;
 }
 
 .field-picker-row-placeholder {
   visibility: hidden;
   pointer-events: none;
-}
-
-.field-with-action {
-  grid-template-rows: auto minmax(3rem, auto) minmax(var(--action-btn-height), auto);
 }
 
 .order-summary-grid {
@@ -337,6 +340,10 @@
   .order-summary-grid,
   .detail-row {
     grid-template-columns: 1fr;
+  }
+
+  .field-inline-picker {
+    grid-template-columns: minmax(0, 1fr);
   }
 
 }

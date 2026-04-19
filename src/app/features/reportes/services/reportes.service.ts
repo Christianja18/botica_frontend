@@ -1,9 +1,9 @@
 import { HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
+import { map, Observable } from 'rxjs';
 
 import { GenericCrudService } from '../../../core/services/http';
-import { ExpiringProduct, InventoryAlert, MonthlyMetric, ReporteDTO } from '../models';
+import { ExpiringProduct, InventoryAlert, MonthlyMetric, PeriodSummary, ReportPeriodGrouping, ReporteDTO } from '../models';
 
 @Injectable({
   providedIn: 'root',
@@ -31,12 +31,49 @@ export class ReportesService extends GenericCrudService<ReporteDTO> {
     return this.post<ReporteDTO>('reportes/generar/inventario', null, { params });
   }
 
+  getVentasResumen(agrupacion: ReportPeriodGrouping, year?: number): Observable<PeriodSummary[]> {
+    let params = new HttpParams().set('agrupacion', agrupacion);
+    if (year !== undefined && year !== null) {
+      params = params.set('year', year);
+    }
+    return this.get<PeriodSummary[]>('reportes/ventas-resumen', { params });
+  }
+
+  getGananciasResumen(agrupacion: ReportPeriodGrouping, year?: number): Observable<PeriodSummary[]> {
+    let params = new HttpParams().set('agrupacion', agrupacion);
+    if (year !== undefined && year !== null) {
+      params = params.set('year', year);
+    }
+    return this.get<PeriodSummary[]>('reportes/ganancias-resumen', { params });
+  }
+
   getVentasPorMes(year: number): Observable<MonthlyMetric[]> {
-    return this.get<MonthlyMetric[]>(`reportes/ventas-por-mes/${year}`);
+    return this.getVentasResumen('mes', year).pipe(
+      map((items) =>
+        items.map((item) => ({
+          anio: item.anio,
+          mes: item.periodo,
+          month: item.periodo,
+          etiqueta: item.etiqueta,
+          totalVentas: item.valor,
+          total_ventas: item.valor,
+        })),
+      ),
+    );
   }
 
   getGananciasPorMes(year: number): Observable<MonthlyMetric[]> {
-    return this.get<MonthlyMetric[]>(`reportes/ganancias-por-mes/${year}`);
+    return this.getGananciasResumen('mes', year).pipe(
+      map((items) =>
+        items.map((item) => ({
+          anio: item.anio,
+          mes: item.periodo,
+          month: item.periodo,
+          etiqueta: item.etiqueta,
+          ganancia: item.valor,
+        })),
+      ),
+    );
   }
 
   getInventarioBajo(): Observable<InventoryAlert[]> {

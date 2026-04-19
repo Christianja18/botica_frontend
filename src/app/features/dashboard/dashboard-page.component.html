@@ -2,10 +2,19 @@
   <header class="surface page-hero">
     <p class="page-kicker">Resumen Operativo</p>
     <h1 class="page-title">Dashboard de la botica</h1>
-    <p class="page-description">Indicadores consolidados desde los endpoints del backend para stock, ventas y alertas.</p>
+    <p class="page-description">Consulta indicadores de stock, ventas y alertas de la botica.</p>
     <div class="page-toolbar">
       <span class="pill">Año analizado: {{ 2026 }}</span>
-      <button class="btn btn-ghost" type="button" (click)="loadDashboard()">Actualizar</button>
+      <button
+        class="btn btn-ghost btn-icon-only"
+        type="button"
+        (click)="loadDashboard()"
+        aria-label="Actualizar dashboard"
+        title="Actualizar dashboard"
+      >
+        <span class="btn-icon-glyph btn-icon-refresh" aria-hidden="true"></span>
+        <span class="sr-only">Actualizar dashboard</span>
+      </button>
     </div>
   </header>
 
@@ -65,7 +74,7 @@
         <div class="panel-header">
           <div>
             <h2 class="panel-title">Productos por vencer</h2>
-            <p class="panel-subtitle">Ventana de 30 días según el endpoint de reportes.</p>
+            <p class="panel-subtitle">Productos que vencen en los proximos 30 dias.</p>
           </div>
         </div>
         <div class="mini-list">
@@ -87,7 +96,7 @@
         <div class="panel-header">
           <div>
             <h2 class="panel-title">Productos vencidos</h2>
-            <p class="panel-subtitle">Alertas ya vencidas detectadas por el backend.</p>
+            <p class="panel-subtitle">Productos vencidos para revisar y retirar.</p>
           </div>
         </div>
         <div class="mini-list">
@@ -109,7 +118,7 @@
         <div class="panel-header">
           <div>
             <h2 class="panel-title">Equipo activo</h2>
-            <p class="panel-subtitle">Usuarios existentes en el sistema backend.</p>
+            <p class="panel-subtitle">Usuarios con acceso al sistema.</p>
           </div>
         </div>
         <div class="mini-list">

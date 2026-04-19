@@ -25,9 +25,27 @@ export interface ExpiringProduct {
   dias_para_vencer?: number;
 }
 
+export type ReportPeriodGrouping =
+  | 'dia'
+  | 'mes'
+  | 'anio'
+  | 'bimestral'
+  | 'trimestral'
+  | 'semestral'
+  | 'anual_consolidado';
+
+export interface PeriodSummary {
+  anio?: number;
+  periodo?: number;
+  etiqueta?: string;
+  valor?: number;
+}
+
 export interface MonthlyMetric {
+  anio?: number;
   mes?: number;
   month?: number;
+  etiqueta?: string;
   totalVentas?: number;
   total_ventas?: number;
   ganancia?: number;

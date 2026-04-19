@@ -71,7 +71,7 @@ export const boletasPageConfig: ResourcePageConfig = {
       maxLength: 20,
       readonly: true,
       createValue: nextBoletaNumber,
-      helpText: 'Se genera automaticamente tomando el ultimo correlativo registrado.',
+      helpText: 'Se genera automaticamente.',
     },
     {
       key: 'idPedido',
@@ -83,7 +83,7 @@ export const boletasPageConfig: ResourcePageConfig = {
       pickerMode: 'modal',
       pickerButtonLabel: 'Buscar pedido',
       selectionQueryParam: 'pedidoSeleccionado',
-      helpText: 'Selecciona el pedido desde una ventana asistida sin salir del formulario.',
+      helpText: 'Selecciona el pedido.',
     },
     { key: 'total', label: 'Total', type: 'currency', hiddenInForm: true },
     { key: 'igv', label: 'IGV', type: 'currency', min: 0, integerDigits: 8, fractionDigits: 2, step: '0.01' },

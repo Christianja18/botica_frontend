@@ -11,7 +11,18 @@
 .field-picker-row {
   display: flex;
   justify-content: flex-start;
-  margin-top: 0.65rem;
+  margin-top: 0;
+}
+
+.field-inline-picker {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.65rem;
+  align-items: center;
+}
+
+.field-inline-picker-single {
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .field-control-readonly {
@@ -137,6 +148,10 @@
 }
 
 @media (max-width: 720px) {
+  .field-inline-picker {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   .pagination-bar {
     flex-direction: column;
     align-items: stretch;
