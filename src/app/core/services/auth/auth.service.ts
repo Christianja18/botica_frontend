@@ -29,7 +29,7 @@ export class AuthService {
   }
 
   logout(): void {
-    const token = this.sessionSignal()?.token;
+    const token = this.activeToken();
     if (token) {
       this.http
         .post(
@@ -47,8 +47,7 @@ export class AuthService {
         });
     }
 
-    this.sessionSignal.set(null);
-    this.storage.removeItem(appSettings.authStorageKey);
+    this.clearSession();
   }
 
   hasPermission(permission?: PermissionKey): boolean {
@@ -87,6 +86,25 @@ export class AuthService {
     }
   }
 
+  activeToken(): string | null {
+    const session = this.sessionSignal();
+    if (!session) {
+      return null;
+    }
+
+    if (this.isExpired(session.expiresAt)) {
+      this.clearSession();
+      return null;
+    }
+
+    return session.token || null;
+  }
+
+  clearSession(): void {
+    this.sessionSignal.set(null);
+    this.storage.removeItem(appSettings.authStorageKey);
+  }
+
   private hydrateSession(): AuthSession | null {
     const raw = this.storage.getItem(appSettings.authStorageKey);
     if (!raw) {
@@ -94,7 +112,12 @@ export class AuthService {
     }
 
     try {
-      return JSON.parse(raw) as AuthSession;
+      const session = JSON.parse(raw) as AuthSession;
+      if (this.isExpired(session.expiresAt)) {
+        this.storage.removeItem(appSettings.authStorageKey);
+        return null;
+      }
+      return session;
     } catch {
       this.storage.removeItem(appSettings.authStorageKey);
       return null;
@@ -128,6 +151,30 @@ export class AuthService {
         },
       },
     };
+  }
+
+  private isExpired(expiresAt: string | null | undefined): boolean {
+    if (!expiresAt) {
+      return true;
+    }
+
+    const match = expiresAt.match(/^(\d{2})\/(\d{2})\/(\d{4}) (\d{2}):(\d{2})$/);
+    if (!match) {
+      return true;
+    }
+
+    const [, day, month, year, hour, minute] = match;
+    const expirationDate = new Date(
+      Number(year),
+      Number(month) - 1,
+      Number(day),
+      Number(hour),
+      Number(minute),
+      0,
+      0,
+    );
+
+    return Number.isNaN(expirationDate.getTime()) || expirationDate.getTime() <= Date.now();
   }
 }
 

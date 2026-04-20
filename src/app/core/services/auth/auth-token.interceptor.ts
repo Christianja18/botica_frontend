@@ -1,33 +1,31 @@
-import { HttpInterceptorFn } from '@angular/common/http';
+import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
+import { inject } from '@angular/core';
+import { catchError, throwError } from 'rxjs';
 
-import { appSettings } from '../../config/app.settings';
-import { AuthSession } from '../../models';
+import { AuthService } from './auth.service';
 
 export const authTokenInterceptor: HttpInterceptorFn = (request, next) => {
+  const auth = inject(AuthService);
+
   if (request.url.endsWith('/auth/login')) {
     return next(request);
   }
 
-  const raw = sessionStorage.getItem(appSettings.authStorageKey);
-  if (!raw) {
-    return next(request);
-  }
-
-  try {
-    const session = JSON.parse(raw) as AuthSession;
-    if (!session.token) {
-      return next(request);
-    }
-
-    return next(
-      request.clone({
+  const token = auth.activeToken();
+  const requestWithAuth = token
+    ? request.clone({
         setHeaders: {
-          Authorization: `${session.tokenType} ${session.token}`,
+          Authorization: `Bearer ${token}`,
         },
-      }),
-    );
-  } catch {
-    sessionStorage.removeItem(appSettings.authStorageKey);
-    return next(request);
-  }
+      })
+    : request;
+
+  return next(requestWithAuth).pipe(
+    catchError((error: unknown) => {
+      if (error instanceof HttpErrorResponse && (error.status === 401 || error.status === 403)) {
+        auth.clearSession();
+      }
+      return throwError(() => error);
+    }),
+  );
 };
