@@ -1,0 +1,69 @@
+```md
+# .dockerignore para proyecto Angular
+
+# =========================
+# Dependencias
+# =========================
+node_modules
+npm-debug.log
+yarn-error.log
+
+# =========================
+# Build output
+# =========================
+dist
+out-tsc
+
+# =========================
+# Cache de Angular
+# =========================
+.angular
+.cache
+
+# =========================
+# IDEs y editores
+# =========================
+.vscode
+.idea
+*.swp
+
+# =========================
+# Sistema operativo
+# =========================
+.DS_Store
+Thumbs.db
+
+# =========================
+# Git
+# =========================
+.git
+.gitignore
+
+# =========================
+# Docker
+# =========================
+Dockerfile*
+docker-compose*
+
+# =========================
+# Tests y cobertura
+# =========================
+coverage
+
+# =========================
+# Archivos temporales
+# =========================
+tmp
+temp
+
+# =========================
+# Logs
+# =========================
+*.log
+
+# =========================
+# Variables de entorno
+# =========================
+.env
+.env.*
+```
