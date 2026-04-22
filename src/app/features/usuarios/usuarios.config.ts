@@ -17,8 +17,8 @@ export const usuariosPageConfig: ResourcePageConfig = {
   },
   importExport: {
     enabled: true,
-    defaultFormat: 'csv',
-    formats: ['csv', 'excel'],
+    defaultFormat: 'excel',
+    formats: ['excel', 'csv'],
   },
   columns: [
     { key: 'nombre', label: 'Nombre' },

@@ -33,8 +33,8 @@ export const productosPageConfig: ResourcePageConfig = {
   },
   importExport: {
     enabled: true,
-    defaultFormat: 'csv',
-    formats: ['csv', 'excel'],
+    defaultFormat: 'excel',
+    formats: ['excel', 'csv'],
   },
   columns: [
     { key: 'codigoBarras', label: 'Codigo' },

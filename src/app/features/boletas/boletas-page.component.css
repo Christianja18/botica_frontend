@@ -116,7 +116,13 @@
 }
 
 .ticket-header-copy {
+  display: grid;
+  gap: 0.5rem;
   min-width: 0;
+}
+
+.ticket-header-copy .pill {
+  justify-self: start;
 }
 
 .ticket-header .status-pill {

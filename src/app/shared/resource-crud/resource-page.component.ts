@@ -69,7 +69,7 @@ export class ResourcePageComponent implements OnInit, OnDestroy {
   readonly pageSize = signal(5);
   readonly totalPages = signal(1);
   readonly totalElements = signal(0);
-  readonly transferFormat = signal<'csv' | 'excel'>('csv');
+  readonly transferFormat = signal<'csv' | 'excel'>('excel');
   readonly defaultValues: Record<string, unknown> = {};
   readonly form = new FormGroup<Record<string, FormControl<unknown>>>({});
   readonly requestedEditId = signal<number | null>(null);
@@ -136,7 +136,9 @@ export class ResourcePageComponent implements OnInit, OnDestroy {
   );
   readonly importExportFormats = computed(() => {
     const configured = this.config().importExport?.formats;
-    return configured?.length ? configured : (['csv', 'excel'] as const);
+    const formats = (configured?.length ? [...configured] : ['excel', 'csv']) as ('csv' | 'excel')[];
+    const order = { excel: 0, csv: 1 } as const;
+    return Array.from(new Set(formats)).sort((left, right) => order[left] - order[right]);
   });
   readonly selectedTransferLabel = computed(() => (this.transferFormat() === 'csv' ? 'CSV' : 'Excel'));
   readonly acceptedImportTypes = computed(() =>
@@ -162,7 +164,7 @@ export class ResourcePageComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.buildForm();
     this.restorePaginationState();
-    this.transferFormat.set(this.config().importExport?.defaultFormat ?? 'csv');
+    this.transferFormat.set(this.config().importExport?.defaultFormat ?? this.importExportFormats()[0] ?? 'excel');
     this.handledRefreshVersion = this.refreshVersion();
 
     effect(

@@ -71,8 +71,8 @@ export const detallesPedidoPageConfig: ResourcePageConfig = {
   },
   importExport: {
     enabled: true,
-    defaultFormat: 'csv',
-    formats: ['csv', 'excel'],
+    defaultFormat: 'excel',
+    formats: ['excel', 'csv'],
   },
   columns: [
     {

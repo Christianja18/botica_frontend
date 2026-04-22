@@ -141,7 +141,12 @@
 }
 
 .history-list {
+  margin-top: 1rem;
   gap: 1rem;
+}
+
+.history-toolbar {
+  margin-bottom: 0.5rem;
 }
 
 .report-history-card {

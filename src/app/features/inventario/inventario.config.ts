@@ -42,8 +42,8 @@ export const inventarioPageConfig: ResourcePageConfig = {
   },
   importExport: {
     enabled: true,
-    defaultFormat: 'csv',
-    formats: ['csv', 'excel'],
+    defaultFormat: 'excel',
+    formats: ['excel', 'csv'],
   },
   columns: [
     {

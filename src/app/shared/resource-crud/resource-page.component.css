@@ -20,11 +20,12 @@
   flex-wrap: wrap;
 }
 
-.toolbar-select {
-  width: 5.2rem;
-  min-width: 5.2rem;
-  max-width: 5.2rem;
-  flex-basis: 5.2rem;
+.pagination-select.toolbar-select {
+  width: 5.89rem;
+  min-width: 5.89rem;
+  max-width: 5.89rem;
+  flex-basis: 5.89rem;
+  padding-right: 2.05rem;
 }
 
 .visually-hidden-input {
