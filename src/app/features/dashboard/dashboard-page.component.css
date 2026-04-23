@@ -1,5 +1,35 @@
 :host {
   display: block;
+  --dashboard-mini-scroll-three: 16.2rem;
+  --dashboard-mini-scroll-four: 21.55rem;
+  --dashboard-bar-scroll-four: 17.4rem;
+}
+
+.dashboard-scroll {
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 0.3rem;
+  overscroll-behavior: contain;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.dashboard-scroll::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+.dashboard-scroll--three {
+  max-height: var(--dashboard-mini-scroll-three);
+}
+
+.dashboard-scroll--four {
+  max-height: var(--dashboard-mini-scroll-four);
+}
+
+.dashboard-scroll--metrics {
+  max-height: var(--dashboard-bar-scroll-four);
 }
 
 .team-row {
