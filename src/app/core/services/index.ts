@@ -3,6 +3,7 @@ export * from './app';
 export * from './auth';
 export * from './http';
 export * from '../../features/boletas/services';
+export * from '../../features/backups/services';
 export * from '../../features/categorias/services';
 export * from '../../features/clientes/services';
 export * from '../../features/detalles-pedido/services';

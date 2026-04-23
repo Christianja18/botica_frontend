@@ -11,4 +11,5 @@ export * from '../../features/inventario/models';
 export * from '../../features/detalles-pedido/models';
 export * from '../../features/pedidos/models';
 export * from '../../features/boletas/models';
+export * from '../../features/backups/models';
 export * from '../../features/reportes/models';

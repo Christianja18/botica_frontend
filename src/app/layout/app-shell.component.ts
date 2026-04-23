@@ -115,6 +115,12 @@ export class AppShellComponent {
             caption: 'Permisos por perfil',
             permission: 'puedeAdministrarUsuarios',
           },
+          {
+            label: 'Backups',
+            route: '/backups',
+            caption: 'Copias en disco local',
+            permission: 'puedeAdministrarUsuarios',
+          },
         ],
       },
     ];

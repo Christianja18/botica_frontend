@@ -1,0 +1,178 @@
+<section class="page-shell">
+  <header class="surface page-hero">
+    <p class="page-kicker">Continuidad operativa</p>
+    <h1 class="page-title">Backups</h1>
+    <p class="page-description">
+      Genera copias manuales de la base de datos y confirma rápidamente dónde quedaron guardadas en el disco local.
+    </p>
+    <div class="page-toolbar">
+      <span class="pill">Destino: {{ storagePath }}</span>
+      <span class="pill">{{ scheduleLabel }}</span>
+      <span class="pill">Copias manuales: {{ generatedCount() }}</span>
+    </div>
+  </header>
+
+  @if (errorMessage()) {
+    <div class="banner banner-error">{{ errorMessage() }}</div>
+  }
+
+  @if (successMessage()) {
+    <div class="banner banner-info">{{ successMessage() }}</div>
+  }
+
+  <section class="stat-grid backup-stat-grid">
+    <article class="surface stat-card">
+      <p class="muted">Carpeta destino</p>
+      <h2 class="stat-value stat-value-sm">{{ storagePath }}</h2>
+      <p class="muted">Si no existe, el sistema la crea antes de guardar la copia.</p>
+    </article>
+    <article class="surface stat-card">
+      <p class="muted">Frecuencia automática</p>
+      <h2 class="stat-value stat-value-sm">Trimestral</h2>
+      <p class="muted">Se ejecuta también sin intervención del usuario.</p>
+    </article>
+    <article class="surface stat-card">
+      <p class="muted">Última acción manual</p>
+      <h2 class="stat-value stat-value-sm">{{ latestBackupLabel() }}</h2>
+      <p class="muted">{{ latestBackupCreatedAt() }}</p>
+    </article>
+    <article class="surface stat-card">
+      <p class="muted">Ruta reciente</p>
+      <h2 class="stat-value stat-value-sm stat-value-path">{{ latestBackupPath() }}</h2>
+      <p class="muted">Úsala para localizar la copia más reciente.</p>
+    </article>
+  </section>
+
+  <section class="split-layout">
+    <article class="surface panel">
+      <div class="panel-header">
+        <div>
+          <h2 class="panel-title">Generar copias manuales</h2>
+          <p class="panel-subtitle">
+            Elige el tipo de respaldo según lo que necesites restaurar. Las copias se guardan directamente en disco.
+          </p>
+        </div>
+      </div>
+
+      <div class="backup-action-grid">
+        @for (card of actionCards; track card.type) {
+          <article class="backup-action-card" [class.backup-action-card-secondary]="card.tone === 'secondary'">
+            <div class="backup-action-copy">
+              <p class="backup-kicker">{{ card.kicker }}</p>
+              <h3 class="panel-title panel-title-sm">{{ card.title }}</h3>
+              <p class="muted">{{ card.description }}</p>
+            </div>
+
+            <div class="backup-badge-row">
+              @for (badge of card.badges; track badge) {
+                <span class="metric-chip">{{ badge }}</span>
+              }
+            </div>
+
+            <div class="detail-box backup-detail-box">
+              <strong>Se guardará en</strong>
+              <span>{{ storagePath }}</span>
+            </div>
+
+            <div class="form-actions">
+              <button
+                class="btn"
+                [class.btn-primary]="card.tone === 'primary'"
+                [class.btn-secondary]="card.tone === 'secondary'"
+                type="button"
+                [disabled]="!!busyType()"
+                (click)="generateBackup(card.type)"
+              >
+                {{ isBusy(card.type) ? 'Generando...' : card.buttonLabel }}
+              </button>
+            </div>
+          </article>
+        }
+      </div>
+    </article>
+
+    <article class="surface panel">
+      <div class="panel-header">
+        <div>
+          <h2 class="panel-title">Actividad de esta sesión</h2>
+          <p class="panel-subtitle">
+            Revisa la ruta exacta, el tamaño y el tipo de respaldo generado desde esta interfaz.
+          </p>
+        </div>
+      </div>
+
+      @if (!history().length) {
+        <div class="empty-state">
+          <strong>Aún no generas copias manuales.</strong>
+          <span>Cuando ejecutes un backup desde aquí, aparecerá con su ruta en disco local.</span>
+        </div>
+      } @else {
+        <div class="mini-list backup-history-list">
+          @for (item of history(); track item.fileName + item.createdAt) {
+            <article class="surface order-card backup-history-card">
+              <div class="panel-header backup-history-header">
+                <div class="backup-history-copy">
+                  <span class="pill">{{ item.title }}</span>
+                  <h3 class="panel-title panel-title-sm">{{ item.fileName }}</h3>
+                  <p class="panel-subtitle">{{ item.createdAt }} · {{ item.sizeLabel }}</p>
+                </div>
+              </div>
+
+              <p class="backup-history-summary">{{ item.summary }}</p>
+
+              <div class="detail-stack">
+                <div class="detail-box backup-path-box">
+                  <strong>Ruta</strong>
+                  <span>{{ item.absolutePath }}</span>
+                </div>
+                <div class="detail-box backup-path-box">
+                  <strong>Respuesta del sistema</strong>
+                  <span>{{ item.message }}</span>
+                </div>
+              </div>
+            </article>
+          }
+        </div>
+      }
+    </article>
+  </section>
+
+  <section class="surface panel">
+    <div class="panel-header">
+      <div>
+        <h2 class="panel-title">Cómo usarlo</h2>
+        <p class="panel-subtitle">
+          Flujo pensado para reducir errores y dejar claro cuándo conviene cada tipo de respaldo.
+        </p>
+      </div>
+    </div>
+
+    <section class="card-grid backup-guide-grid">
+      <article class="backup-guide-card">
+        <p class="backup-kicker">Paso 1</p>
+        <h3 class="panel-title panel-title-sm">Elige el tipo</h3>
+        <p class="muted">Usa backup completo para estructura + datos. Usa inserts si la estructura ya existe.</p>
+      </article>
+      <article class="backup-guide-card">
+        <p class="backup-kicker">Paso 2</p>
+        <h3 class="panel-title panel-title-sm">Ejecuta y espera</h3>
+        <p class="muted">La interfaz bloquea acciones paralelas y muestra un estado claro mientras trabaja.</p>
+      </article>
+      <article class="backup-guide-card">
+        <p class="backup-kicker">Paso 3</p>
+        <h3 class="panel-title panel-title-sm">Ubica la copia</h3>
+        <p class="muted">La respuesta te deja la ruta exacta dentro de {{ storagePath }} para auditoría rápida.</p>
+      </article>
+    </section>
+  </section>
+
+  @if (busyType()) {
+    <div class="saving-overlay">
+      <div class="surface saving-card">
+        <div class="saving-spinner" aria-hidden="true"></div>
+        <strong>Generando backup...</strong>
+        <span>Espera un momento mientras guardamos la copia en {{ storagePath }}.</span>
+      </div>
+    </div>
+  }
+</section>

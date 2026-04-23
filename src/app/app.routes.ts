@@ -122,6 +122,15 @@ export const routes: Routes = [
             (module) => module.ReportesPageComponent,
           ),
       },
+      {
+        path: 'backups',
+        canActivate: [permissionGuard],
+        data: { permission: 'puedeAdministrarUsuarios' },
+        loadComponent: () =>
+          import('./features/backups/backups-page.component').then(
+            (module) => module.BackupsPageComponent,
+          ),
+      },
     ],
   },
   { path: '**', redirectTo: '' },
